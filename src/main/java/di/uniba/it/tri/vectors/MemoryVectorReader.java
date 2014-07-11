@@ -1,0 +1,105 @@
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package di.uniba.it.tri.vectors;
+
+import java.io.BufferedInputStream;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+/**
+ *
+ * @author pierpaolo
+ */
+public class MemoryVectorReader implements VectorReader {
+
+    private final Map<String, Vector> memory = new HashMap<>();
+
+    private static final Logger logger = Logger.getLogger(MemoryVectorReader.class.getName());
+
+    private final File inputFile;
+
+    private int dimension;
+
+    public MemoryVectorReader(File inputFile) {
+        this.inputFile = inputFile;
+    }
+
+    public void init() throws IOException {
+        memory.clear();
+        DataInputStream inputStream = new DataInputStream(new BufferedInputStream(new FileInputStream(inputFile)));
+        logger.log(Level.INFO, "Loading vector store: {0}", inputFile.getAbsolutePath());
+        Properties props = VectorStoreUtils.readHeader(inputStream.readUTF());
+        dimension = Integer.parseInt(props.getProperty("-dim"));
+        while (inputStream.available() > 0) {
+            String key = inputStream.readUTF();
+            Vector vector = VectorFactory.createZeroVector(VectorType.REAL, dimension);
+            vector.readFromStream(inputStream);
+            memory.put(key, vector);
+        }
+        inputStream.close();
+        logger.log(Level.INFO, "Total vectors: {0}", memory.size());
+    }
+
+    public Vector getVector(String key) throws IOException {
+        return memory.get(key);
+    }
+
+    public Iterator<String> getKeys() throws IOException {
+        return memory.keySet().iterator();
+    }
+
+    public void close() throws IOException {
+        memory.clear();
+    }
+
+    @Override
+    public Iterator<ObjectVector> getAllVectors() throws IOException {
+        return new MemoryVectorIterator(memory);
+    }
+
+    @Override
+    public int getDimension() {
+        return this.dimension;
+    }
+
+    public final class MemoryVectorIterator implements Iterator<ObjectVector> {
+
+        private final Map<String, Vector> memory;
+
+        private final Iterator<String> internalIterator;
+
+        public MemoryVectorIterator(Map<String, Vector> memory) {
+            this.memory = memory;
+            this.internalIterator = this.memory.keySet().iterator();
+        }
+
+        @Override
+        public boolean hasNext() {
+            return this.internalIterator.hasNext();
+        }
+
+        @Override
+        public ObjectVector next() {
+            String key = this.internalIterator.next();
+            Vector v = memory.get(key);
+            return new ObjectVector(key, v);
+        }
+
+        @Override
+        public void remove() {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+
+    }
+}
