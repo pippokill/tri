@@ -128,7 +128,7 @@ public class SpaceBuilder {
             while (reader.ready()) {
                 split = reader.readLine().split("\t");
                 String token = cleanToken(split[0]);
-                if (token != null) {
+                if (token != null && elementalSpace.containsKey(token)) {
                     Vector v = VectorFactory.createZeroVector(VectorType.REAL, dimension);
                     int i = 1;
                     double totOcc = 0;

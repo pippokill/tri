@@ -66,7 +66,8 @@ public class BuildOccurrence {
         for (File file : listFiles) {
             if (file.getName().endsWith("_" + String.valueOf(year))) {
                 logger.log(Level.INFO, "Working file: {0}", file.getName());
-                StringReader reader = Utils.extractReaderFromTxtFile(file);
+                //StringReader reader = Utils.extractReaderFromGutenbergFile(file);
+                StringReader reader = Utils.extractReaderFromANNFile(file);
                 List<String> tokens = getTokens(reader);
                 for (int i = 0; i < tokens.size(); i++) {
                     int start = Math.max(0, i - winsize);

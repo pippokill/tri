@@ -17,7 +17,7 @@ import java.io.StringReader;
  */
 public class Utils {
 
-    public static StringReader extractReaderFromTxtFile(File txtfile) throws IOException {
+    public static StringReader extractReaderFromGutenbergFile(File txtfile) throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(txtfile));
         StringBuilder sb = new StringBuilder();
         while (reader.ready()) {
@@ -52,6 +52,21 @@ public class Utils {
             sb = sb.delete(l, sb.length());
         }
         l = sb.indexOf("*** END OF THIS PROJECT GUTENBERG");
+        if (l >= 0) {
+            sb = sb.delete(l, sb.length());
+        }
+        return new StringReader(sb.toString());
+    }
+
+    public static StringReader extractReaderFromANNFile(File txtfile) throws IOException {
+        BufferedReader reader = new BufferedReader(new FileReader(txtfile));
+        StringBuilder sb = new StringBuilder();
+        while (reader.ready()) {
+            sb.append(reader.readLine()).append("\n");
+        }
+        reader.close();
+        //remove reference
+        int l = sb.indexOf("References");
         if (l >= 0) {
             sb = sb.delete(l, sb.length());
         }
