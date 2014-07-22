@@ -5,6 +5,7 @@
  */
 package di.uniba.it.tri;
 
+import di.uniba.it.tri.shell.TriShell;
 import di.uniba.it.tri.vectors.FileVectorReader;
 import di.uniba.it.tri.vectors.MapVectorReader;
 import di.uniba.it.tri.vectors.ObjectVector;
@@ -242,6 +243,36 @@ public class TemporalSpaceUtils {
 
     public static File getVectorFile(File startDir, String year) {
         return new File(startDir.getAbsolutePath() + "/count_" + year + ".vectors");
+    }
+
+    public static List<ObjectVector> sims(VectorReader store1, VectorReader store2, int n) throws IOException {
+        PriorityQueue<ObjectVector> queue = new PriorityQueue<>();
+        Iterator<ObjectVector> allVectors = store1.getAllVectors();
+        int c = 0;
+        TriShell.println("");
+        while (allVectors.hasNext()) {
+            ObjectVector ov = allVectors.next();
+            Vector vector = store2.getVector(ov.getKey());
+            if (vector != null) {
+                double overlap = 1 - ov.getVector().measureOverlap(vector);
+                ov.setScore(overlap);
+                if (queue.size() <= n) {
+                    queue.offer(ov);
+                } else {
+                    queue.poll();
+                    queue.offer(ov);
+                }
+            }
+            c++;
+            if (c % 1000 == 0) {
+                TriShell.print(".");
+            }
+        }
+        TriShell.println("");
+        queue.poll();
+        List<ObjectVector> list = new ArrayList<>(queue);
+        Collections.sort(list, new ReverseObjectVectorComparator());
+        return list;
     }
 
 }

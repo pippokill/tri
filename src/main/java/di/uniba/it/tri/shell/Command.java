@@ -71,54 +71,56 @@ public class Command {
     }
 
     public void executeCommand(String command) throws Exception {
-        if (command.startsWith("indexelem")) {
+        if (command.startsWith("indexelem ")) {
             indexelem();
-        } else if (command.startsWith("index")) {
+        } else if (command.startsWith("index ")) {
             index(command);
-        } else if (command.startsWith("search")) {
+        } else if (command.startsWith("search ")) {
             search(command);
-        } else if (command.startsWith("set")) {
+        } else if (command.startsWith("set ")) {
             set(command);
-        } else if (command.startsWith("year")) {
+        } else if (command.startsWith("year ")) {
             year(command);
-        } else if (command.startsWith("load")) {
+        } else if (command.startsWith("load ")) {
             load(command);
-        } else if (command.startsWith("fload")) {
+        } else if (command.startsWith("fload ")) {
             fload(command);
-        } else if (command.startsWith("list")) {
+        } else if (command.startsWith("list ")) {
             list(command);
-        } else if (command.startsWith("clear")) {
+        } else if (command.startsWith("clear ")) {
             clear(command);
-        } else if (command.startsWith("get")) {
+        } else if (command.startsWith("get ")) {
             get(command);
-        } else if (command.startsWith("add")) {
+        } else if (command.startsWith("add ")) {
             add(command);
-        } else if (command.startsWith("addv")) {
+        } else if (command.startsWith("addv ")) {
             addv(command);
-        } else if (command.startsWith("near")) {
+        } else if (command.startsWith("near ")) {
             near(command);
-        } else if (command.startsWith("sim")) {
+        } else if (command.startsWith("sim ")) {
             sim(command);
-        } else if (command.startsWith("tir")) {
+        } else if (command.startsWith("tir ")) {
             tir(command);
-        } else if (command.startsWith("ftir")) {
+        } else if (command.startsWith("ftir ")) {
             ftir(command);
-        } else if (command.startsWith("compare")) {
+        } else if (command.startsWith("compare ")) {
             compare(command);
-        } else if (command.startsWith("cset")) {
+        } else if (command.startsWith("cset ")) {
             cset(command);
-        } else if (command.startsWith("rset")) {
+        } else if (command.startsWith("rset ")) {
             rset(command);
-        } else if (command.startsWith("dset")) {
+        } else if (command.startsWith("dset ")) {
             dset(command);
-        } else if (command.startsWith("aset")) {
+        } else if (command.startsWith("aset ")) {
             aset(command);
-        } else if (command.startsWith("sset")) {
+        } else if (command.startsWith("sset ")) {
             sset(command);
-        } else if (command.startsWith("pset")) {
+        } else if (command.startsWith("pset ")) {
             pset(command);
-        } else if (command.startsWith("vset")) {
+        } else if (command.startsWith("vset ")) {
             vset(command);
+        } else if (command.startsWith("sims ")) {
+            sims(command);
         } else {
             throw new Exception("Unknown command: " + command);
         }
@@ -614,6 +616,29 @@ public class Command {
             }
         } else {
             throw new Exception("compare syntax error");
+        }
+    }
+
+    private void sims(String cmd) throws Exception {
+        String[] split = cmd.split("\\s+");
+        if (split.length > 3) {
+            if (!split[1].matches("[0-9]+")) {
+                throw new Exception("no valid number of results");
+            }
+            VectorReader vr1 = stores.get(split[2]);
+            if (vr1 == null) {
+                throw new Exception("no valid store for: " + split[2]);
+            }
+            VectorReader vr2 = stores.get(split[3]);
+            if (vr2 == null) {
+                throw new Exception("no valid store for: " + split[3]);
+            }
+            List<ObjectVector> sims = TemporalSpaceUtils.sims(vr1, vr2, Integer.parseInt(split[1]));
+            for (ObjectVector ov : sims) {
+                TriShell.println(ov.getKey() + "\t" + ov.getScore());
+            }
+        } else {
+            throw new Exception("sims syntax error");
         }
     }
 
