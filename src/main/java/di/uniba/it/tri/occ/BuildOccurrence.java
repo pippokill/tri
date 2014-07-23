@@ -1,14 +1,43 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Copyright (c) 2014, the Temporal Random Indexing AUTHORS.
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ *
+ * Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * Neither the name of the University of Bari nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ * GNU GENERAL PUBLIC LICENSE - Version 3, 29 June 2007
+ *
  */
 package di.uniba.it.tri.occ;
 
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Multiset.Entry;
-import di.uniba.it.tri.Utils;
+import di.uniba.it.tri.extractor.Extractor;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -40,6 +69,8 @@ public class BuildOccurrence {
     private File outputDir = new File("./");
 
     private static final Logger logger = Logger.getLogger(BuildOccurrence.class.getName());
+    
+    private Extractor extractor;
 
     public BuildOccurrence() {
     }
@@ -60,14 +91,21 @@ public class BuildOccurrence {
         this.outputDir = outputDir;
     }
 
+    public Extractor getExtractor() {
+        return extractor;
+    }
+
+    public void setExtractor(Extractor extractor) {
+        this.extractor = extractor;
+    }
+
     private Map<String, Multiset<String>> count(File startingDir, int year) throws IOException {
         Map<String, Multiset<String>> map = new HashMap<>();
         File[] listFiles = startingDir.listFiles();
         for (File file : listFiles) {
             if (file.getName().endsWith("_" + String.valueOf(year))) {
                 logger.log(Level.INFO, "Working file: {0}", file.getName());
-                //StringReader reader = Utils.extractReaderFromGutenbergFile(file);
-                StringReader reader = Utils.extractReaderFromANNFile(file);
+                StringReader reader = extractor.extract(file);
                 List<String> tokens = getTokens(reader);
                 for (int i = 0; i < tokens.size(); i++) {
                     int start = Math.max(0, i - winsize);
@@ -161,16 +199,18 @@ public class BuildOccurrence {
     }
 
     /**
-     * startingDir outputDir windowSize
+     * corpusDir outputDir windowSize extractor_class
      *
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        if (args.length == 3) {
+        if (args.length == 4) {
             try {
+                Extractor extractor=(Extractor) Class.forName(args[4]).newInstance();
                 BuildOccurrence builder = new BuildOccurrence();
                 builder.setOutputDir(new File(args[1]));
                 builder.setWinsize(Integer.parseInt(args[2]));
+                builder.setExtractor(extractor);
                 builder.process(new File(args[0]));
             } catch (Exception ex) {
                 logger.log(Level.SEVERE, null, ex);

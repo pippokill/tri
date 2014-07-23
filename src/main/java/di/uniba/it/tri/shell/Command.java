@@ -1,7 +1,36 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Copyright (c) 2014, the Temporal Random Indexing AUTHORS.
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ *
+ * Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * Neither the name of the University of Bari nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ * GNU GENERAL PUBLIC LICENSE - Version 3, 29 June 2007
+ *
  */
 package di.uniba.it.tri.shell;
 
@@ -795,13 +824,13 @@ public class Command {
     }
 
     private void initHelp() {
-        help.setProperty("set", "set <main dir> - set the main directory");
-        help.setProperty("index", "index <file|mem> <name> - create the word index from a vector reader using a filename or a previous reader loaded in memory");
-        help.setProperty("search", "search <number of resutls> <query> - search the word index");
-        help.setProperty("indexelem", "indexelem - create the word index of the elemental vector");
+        help.setProperty("set", "set <main dir> - set the main directory in which WordSpaces are stored");
+        help.setProperty("index", "index <file|mem> <name> - create a words index from a vector reader using a filename (file) or a previous reader loaded in memory (mem)");
+        help.setProperty("search", "search <number of resutls> <query> - search in the current words index");
+        help.setProperty("indexelem", "indexelem - create the words index of the elemental vector");
         help.setProperty("year", "year (<start> <end>)* - list the available years");
         help.setProperty("load", "load <file|mem> (<name> <year>)* - load a vector reader of the specified type (mem or file) and year. If no name and year are provided the elemental vector reader is loaded");
-        help.setProperty("fload", "fload <file|mem> <name> <filename> - load a vector reader (name) of the specified type (mem or file) from a file.");
+        help.setProperty("fload", "fload <file|mem> <name> <filename> - load a vector reader (name) of the specified type (mem or file) from a file");
         help.setProperty("list", "list <stores|vectors> - list stores or vectors available in memory");
         help.setProperty("clear", "clear <stores|vectors|index> <name>* - remove a vector reader (stores) or a vector (vectors) or the index. If no name is provided all the elements are removed");
         help.setProperty("get", "get <vector reader name> <vector name> <word> - get the word vector from the vector reader and store it in memory using the vector name");
@@ -809,18 +838,19 @@ public class Command {
         help.setProperty("addv", "addv <vector reader name> <vector name> <vectors>+ - get and sum multiple vectors in memory and store the result in memory using the vector name");
         help.setProperty("near", "near <number of results> <vector reader name> <vector name> - print nearest vectors");
         help.setProperty("sim", "sim <vector name 1> <vector name 2> - print vectors similarity");
-        help.setProperty("count", "count <vector reader name> - return the number of vectors");
-        help.setProperty("tir", "tir <vector reader name> <start year> <end year> - create a new temporala space named <vector reader name> form start_year to end_year");
+        help.setProperty("count", "count <vector reader name> - return the number of vectors in the vector reader");
+        help.setProperty("tir", "tir <vector reader name> <start year> <end year> - create a new temporal space named vector reader name form start_year to end_year");
         help.setProperty("ftir", "ftir <output filename> <start year> <end year> - create a new temporal space form start_year to end_year and save it on disk");
-        help.setProperty("compare", "compare <number of results> <vector reader name1> <vector reader name1> <vector name1> <vector name2> - compare near vectors of vector name1 in vector reader name1 and ector name2 in vector reader name2");
-        //set help
+        help.setProperty("sims", "sims <number of results> <vector reader name1> <vector reader name2> - find words that change meaning between two WordSpaces");
+        help.setProperty("compare", "compare <number of results> <vector reader name1> <vector reader name1> <vector name1> <vector name2> - compare nearest vectors of vector name1 in vector reader name1 and vector name2 in vector reader name2");
+        //help of commands related to sets
         help.setProperty("cset", "cset <name> - create a new set");
         help.setProperty("aset", "aset <name> <word>+ - add words to a set");
         help.setProperty("rset", "rset <name> <word>+ - remove words from a set");
         help.setProperty("dset", "dset <name> - remove a set");
-        help.setProperty("sset", "sset <name> <number of results> <query> - search and sava results in a set");
+        help.setProperty("sset", "sset <name> <number of results> <query> - search in the words index and save results in a set");
         help.setProperty("pset", "pset <name> print set");
-        help.setProperty("vset", "vset <vector reader name> <set name> <vector name> - convert a set into a vector using the vector reader");
+        help.setProperty("vset", "vset <vector reader name> <set name> <vector name> - convert a set into a vector fetching vectors from the vector reader");
 
     }
 
