@@ -49,8 +49,9 @@ public class TemporalSpaceUtils {
             while (iterator.hasNext()) {
                 String key = iterator.next();
                 Vector v = space.get(key);
-                if (newSpace.containsKey(key)) {
-                    newSpace.get(key).superpose(v, 1, null);
+                Vector nw = newSpace.get(key);
+                if (nw != null) {
+                    nw.superpose(v, 1, null);
                 } else {
                     newSpace.put(key, v);
                 }
@@ -66,14 +67,14 @@ public class TemporalSpaceUtils {
     public static Map<String, Vector> combineVectorReader(VectorReader... readers) throws IOException {
         Map<String, Vector> newSpace = new HashMap<>();
         for (VectorReader reader : readers) {
-            Iterator<String> iterator = reader.getKeys();
-            while (iterator.hasNext()) {
-                String key = iterator.next();
-                Vector v = reader.getVector(key);
-                if (newSpace.containsKey(key)) {
-                    newSpace.get(key).superpose(v, 1, null);
+            Iterator<ObjectVector> allVectors = reader.getAllVectors();
+            while (allVectors.hasNext()) {
+                ObjectVector ov = allVectors.next();
+                Vector nw = newSpace.get(ov.getKey());
+                if (nw != null) {
+                    nw.superpose(ov.getVector(), 1, null);
                 } else {
-                    newSpace.put(key, v);
+                    newSpace.put(ov.getKey(), ov.getVector());
                 }
             }
         }
@@ -92,8 +93,9 @@ public class TemporalSpaceUtils {
             Iterator<ObjectVector> allVectors = reader.getAllVectors();
             while (allVectors.hasNext()) {
                 ObjectVector ov = allVectors.next();
-                if (newSpace.containsKey(ov.getKey())) {
-                    newSpace.get(ov.getKey()).superpose(ov.getVector(), 1, null);
+                Vector nw = newSpace.get(ov.getKey());
+                if (nw != null) {
+                    nw.superpose(ov.getVector(), 1, null);
                 } else {
                     newSpace.put(ov.getKey(), ov.getVector());
                 }
@@ -115,8 +117,9 @@ public class TemporalSpaceUtils {
             Iterator<ObjectVector> allVectors = reader.getAllVectors();
             while (allVectors.hasNext()) {
                 ObjectVector ov = allVectors.next();
-                if (newSpace.containsKey(ov.getKey())) {
-                    newSpace.get(ov.getKey()).superpose(ov.getVector(), 1, null);
+                Vector nw = newSpace.get(ov.getKey());
+                if (nw != null) {
+                    nw.superpose(ov.getVector(), 1, null);
                 } else {
                     newSpace.put(ov.getKey(), ov.getVector());
                 }
@@ -273,6 +276,17 @@ public class TemporalSpaceUtils {
         List<ObjectVector> list = new ArrayList<>(queue);
         Collections.sort(list, new ReverseObjectVectorComparator());
         return list;
+    }
+
+    public static int countVectors(VectorReader reader) throws IOException {
+        Iterator<ObjectVector> allVectors = reader.getAllVectors();
+        int counter = 0;
+        while (allVectors.hasNext()) {
+            allVectors.next();
+            counter++;
+        }
+        return counter;
+
     }
 
 }

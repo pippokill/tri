@@ -119,6 +119,8 @@ public class Command {
             pset(command);
         } else if (command.startsWith("vset ")) {
             vset(command);
+        } else if (command.startsWith("count")) {
+            count(command);
         } else if (command.startsWith("sims ")) {
             sims(command);
         } else {
@@ -619,26 +621,17 @@ public class Command {
         }
     }
 
-    private void sims(String cmd) throws Exception {
+    private void count(String cmd) throws Exception {
         String[] split = cmd.split("\\s+");
-        if (split.length > 3) {
-            if (!split[1].matches("[0-9]+")) {
-                throw new Exception("no valid number of results");
+        if (split.length > 1) {
+            VectorReader vr = stores.get(split[1]);
+            if (vr == null) {
+                throw new Exception("no valid store for: " + split[1]);
             }
-            VectorReader vr1 = stores.get(split[2]);
-            if (vr1 == null) {
-                throw new Exception("no valid store for: " + split[2]);
-            }
-            VectorReader vr2 = stores.get(split[3]);
-            if (vr2 == null) {
-                throw new Exception("no valid store for: " + split[3]);
-            }
-            List<ObjectVector> sims = TemporalSpaceUtils.sims(vr1, vr2, Integer.parseInt(split[1]));
-            for (ObjectVector ov : sims) {
-                TriShell.println(ov.getKey() + "\t" + ov.getScore());
-            }
+            int countVectors = TemporalSpaceUtils.countVectors(vr);
+            TriShell.println(split[1] + " contains " + countVectors + ".");
         } else {
-            throw new Exception("sims syntax error");
+            throw new Exception("compare syntax error");
         }
     }
 
@@ -777,6 +770,29 @@ public class Command {
             throw new Exception("set2vec syntax error");
         }
     }
+    
+    private void sims(String cmd) throws Exception {
+        String[] split = cmd.split("\\s+");
+        if (split.length > 3) {
+            if (!split[1].matches("[0-9]+")) {
+                throw new Exception("no valid number of results");
+            }
+            VectorReader vr1 = stores.get(split[2]);
+            if (vr1 == null) {
+                throw new Exception("no valid store for: " + split[2]);
+            }
+            VectorReader vr2 = stores.get(split[3]);
+            if (vr2 == null) {
+                throw new Exception("no valid store for: " + split[3]);
+            }
+            List<ObjectVector> sims = TemporalSpaceUtils.sims(vr1, vr2, Integer.parseInt(split[1]));
+            for (ObjectVector ov : sims) {
+                TriShell.println(ov.getKey() + "\t" + ov.getScore());
+            }
+        } else {
+            throw new Exception("sims syntax error");
+        }
+    }
 
     private void initHelp() {
         help.setProperty("set", "set <main dir> - set the main directory");
@@ -793,6 +809,7 @@ public class Command {
         help.setProperty("addv", "addv <vector reader name> <vector name> <vectors>+ - get and sum multiple vectors in memory and store the result in memory using the vector name");
         help.setProperty("near", "near <number of results> <vector reader name> <vector name> - print nearest vectors");
         help.setProperty("sim", "sim <vector name 1> <vector name 2> - print vectors similarity");
+        help.setProperty("count", "count <vector reader name> - return the number of vectors");
         help.setProperty("tir", "tir <vector reader name> <start year> <end year> - create a new temporala space named <vector reader name> form start_year to end_year");
         help.setProperty("ftir", "ftir <output filename> <start year> <end year> - create a new temporal space form start_year to end_year and save it on disk");
         help.setProperty("compare", "compare <number of results> <vector reader name1> <vector reader name1> <vector name1> <vector name2> - compare near vectors of vector name1 in vector reader name1 and ector name2 in vector reader name2");
