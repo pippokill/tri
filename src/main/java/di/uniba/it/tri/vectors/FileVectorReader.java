@@ -58,10 +58,18 @@ public class FileVectorReader implements VectorReader {
 
     private int dimension;
 
+    /**
+     *
+     * @param inputFile
+     */
     public FileVectorReader(File inputFile) {
         this.inputFile = inputFile;
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     public void init() throws IOException {
         DataInputStream inputStream = new DataInputStream(new BufferedInputStream(new FileInputStream(inputFile)));
         logger.log(Level.INFO, "Init vector store: {0}", inputFile.getAbsolutePath());
@@ -70,11 +78,21 @@ public class FileVectorReader implements VectorReader {
         inputStream.close();
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     @Override
     public void close() throws IOException {
 
     }
 
+    /**
+     *
+     * @param key
+     * @return
+     * @throws IOException
+     */
     @Override
     public Vector getVector(String key) throws IOException {
         DataInputStream inputStream = new DataInputStream(new BufferedInputStream(new FileInputStream(inputFile)));
@@ -94,6 +112,11 @@ public class FileVectorReader implements VectorReader {
         return null;
     }
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     @Override
     public Iterator<String> getKeys() throws IOException {
         Set<String> keySet = new HashSet<>();
@@ -108,16 +131,28 @@ public class FileVectorReader implements VectorReader {
         return keySet.iterator();
     }
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     @Override
     public Iterator<ObjectVector> getAllVectors() throws IOException {
         return new FileVectorIterator(inputFile);
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public int getDimension() {
         return this.dimension;
     }
 
+    /**
+     *
+     */
     public static class FileVectorIterator implements Iterator<ObjectVector> {
 
         private final File file;
@@ -126,6 +161,10 @@ public class FileVectorReader implements VectorReader {
 
         private int dimension;
 
+        /**
+         *
+         * @param file
+         */
         public FileVectorIterator(File file) {
             this.file = file;
             try {

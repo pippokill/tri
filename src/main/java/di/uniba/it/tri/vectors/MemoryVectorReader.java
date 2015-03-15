@@ -60,10 +60,18 @@ public class MemoryVectorReader implements VectorReader {
 
     private int dimension;
 
+    /**
+     *
+     * @param inputFile
+     */
     public MemoryVectorReader(File inputFile) {
         this.inputFile = inputFile;
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     public void init() throws IOException {
         memory.clear();
         DataInputStream inputStream = new DataInputStream(new BufferedInputStream(new FileInputStream(inputFile)));
@@ -80,34 +88,65 @@ public class MemoryVectorReader implements VectorReader {
         logger.log(Level.INFO, "Total vectors: {0}", memory.size());
     }
 
+    /**
+     *
+     * @param key
+     * @return
+     * @throws IOException
+     */
     public Vector getVector(String key) throws IOException {
         return memory.get(key);
     }
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public Iterator<String> getKeys() throws IOException {
         return memory.keySet().iterator();
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     public void close() throws IOException {
         memory.clear();
     }
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     @Override
     public Iterator<ObjectVector> getAllVectors() throws IOException {
         return new MemoryVectorIterator(memory);
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public int getDimension() {
         return this.dimension;
     }
 
+    /**
+     *
+     */
     public final class MemoryVectorIterator implements Iterator<ObjectVector> {
 
         private final Map<String, Vector> memory;
 
         private final Iterator<String> internalIterator;
 
+        /**
+         *
+         * @param memory
+         */
         public MemoryVectorIterator(Map<String, Vector> memory) {
             this.memory = memory;
             this.internalIterator = this.memory.keySet().iterator();

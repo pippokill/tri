@@ -52,6 +52,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.commons.cli.BasicParser;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -63,47 +69,94 @@ import org.apache.lucene.util.Version;
  * @author pierpaolo
  */
 public class BuildOccurrence {
-
+    
     private int winsize = 5;
-
+    
     private File outputDir = new File("./");
-
+    
     private static final Logger logger = Logger.getLogger(BuildOccurrence.class.getName());
     
     private Extractor extractor;
+    
+    private String filenameRegExp = "^.+$";
 
-    public BuildOccurrence() {
+    /**
+     * Get the RegExp used to fetch files
+     *
+     * @return The RegExp
+     */
+    public String getFilenameRegExp() {
+        return filenameRegExp;
     }
 
+    /**
+     * Set the RegExp used to fetch files
+     *
+     * @param filenameRegExp The RegExp
+     */
+    public void setFilenameRegExp(String filenameRegExp) {
+        this.filenameRegExp = filenameRegExp;
+    }
+
+    /**
+     * Get the window size
+     *
+     * @return The window size
+     */
     public int getWinsize() {
         return winsize;
     }
 
+    /**
+     * Set the window size
+     *
+     * @param winsize The window size
+     */
     public void setWinsize(int winsize) {
         this.winsize = winsize;
     }
 
+    /**
+     * Get the output directory
+     *
+     * @return The output directory
+     */
     public File getOutputDir() {
         return outputDir;
     }
 
+    /**
+     * Set the output directory
+     *
+     * @param outputDir The output directory
+     */
     public void setOutputDir(File outputDir) {
         this.outputDir = outputDir;
     }
 
+    /**
+     * Get the extractor
+     *
+     * @return The extractor
+     */
     public Extractor getExtractor() {
         return extractor;
     }
 
+    /**
+     * Set the extractor
+     *
+     * @param extractor The extractor
+     */
     public void setExtractor(Extractor extractor) {
         this.extractor = extractor;
     }
-
+    
     private Map<String, Multiset<String>> count(File startingDir, int year) throws IOException {
         Map<String, Multiset<String>> map = new HashMap<>();
         File[] listFiles = startingDir.listFiles();
         for (File file : listFiles) {
-            if (file.getName().endsWith("_" + String.valueOf(year))) {
+            if (file.getName().matches(filenameRegExp) && file.getName().lastIndexOf("_") > -1 && file.getName().endsWith(String.valueOf(year))) {
                 logger.log(Level.INFO, "Working file: {0}", file.getName());
                 StringReader reader = extractor.extract(file);
                 List<String> tokens = getTokens(reader);
@@ -125,7 +178,7 @@ public class BuildOccurrence {
         }
         return map;
     }
-
+    
     private List<String> getTokens(Reader reader) throws IOException {
         List<String> tokens = new ArrayList<>();
         Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_36);
@@ -153,6 +206,13 @@ public class BuildOccurrence {
         return tokens;
     }
 
+    /**
+     * Build the co-occurrences matrix
+     *
+     * @param startingDir The corpus directory containing files with year
+     * metadata
+     * @throws Exception
+     */
     public void process(File startingDir) throws Exception {
         logger.log(Level.INFO, "Starting dir: {0}", startingDir.getAbsolutePath());
         logger.log(Level.INFO, "Output dir: {0}", outputDir.getAbsolutePath());
@@ -162,8 +222,10 @@ public class BuildOccurrence {
         int maxYear = -Integer.MAX_VALUE;
         for (File file : listFiles) {
             int i = file.getName().lastIndexOf("_");
-            if (i > -1) {
-                int year = Integer.parseInt(file.getName().substring(i + 1));
+            if (i > -1 && file.getName().substring(0, i).matches(filenameRegExp)) {
+                //fix year to consider only the last 4 chars
+                //old year int year = Integer.parseInt(file.getName().substring(i + 1));
+                int year = Integer.parseInt(file.getName().substring(file.getName().length() - 4, file.getName().length()));
                 if (year < minYear) {
                     minYear = year;
                 }
@@ -182,7 +244,7 @@ public class BuildOccurrence {
             }
         }
     }
-
+    
     private void save(Map<String, Multiset<String>> count, int year) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(outputDir.getAbsolutePath() + "/count_" + year));
         Iterator<String> keys = count.keySet().iterator();
@@ -197,27 +259,47 @@ public class BuildOccurrence {
         }
         writer.close();
     }
+    
+    static Options options;
+    
+    static CommandLineParser cmdParser = new BasicParser();
+    
+    static {
+        options = new Options();
+        options.addOption("c", true, "The corpus directory containing files with year metadata")
+                .addOption("o", true, "Output directory where output will be stored")
+                .addOption("w", true, "The window size used to compute the co-occurrences")
+                .addOption("e", true, "The class used to extract the content from files")
+                .addOption("r", true, "Regular expression used to fetch files (optional, default \".+\")");
+    }
 
     /**
-     * corpusDir outputDir windowSize extractor_class
+     * Build the co-occurrences matrix given the set of files with year metadata
      *
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        if (args.length == 4) {
-            try {
-                Extractor extractor=(Extractor) Class.forName(args[4]).newInstance();
-                BuildOccurrence builder = new BuildOccurrence();
-                builder.setOutputDir(new File(args[1]));
-                builder.setWinsize(Integer.parseInt(args[2]));
-                builder.setExtractor(extractor);
-                builder.process(new File(args[0]));
-            } catch (Exception ex) {
-                logger.log(Level.SEVERE, null, ex);
+        try {
+            CommandLine cmd = cmdParser.parse(options, args);
+            if (cmd.hasOption("c") && cmd.hasOption("o") && cmd.hasOption("w") && cmd.hasOption("e")) {
+                try {
+                    Extractor extractor = (Extractor) Class.forName("di.uniba.it.tri.extractor." + cmd.getOptionValue("e")).newInstance();
+                    BuildOccurrence builder = new BuildOccurrence();
+                    builder.setOutputDir(new File(cmd.getOptionValue("o")));
+                    builder.setWinsize(Integer.parseInt(cmd.getOptionValue("w")));
+                    builder.setExtractor(extractor);
+                    builder.setFilenameRegExp(cmd.getOptionValue("r", "^.+$"));
+                    builder.process(new File(cmd.getOptionValue("c")));
+                } catch (Exception ex) {
+                    logger.log(Level.SEVERE, null, ex);
+                }
+            } else {
+                HelpFormatter helpFormatter = new HelpFormatter();
+                helpFormatter.printHelp("Build the co-occurrences matrix given the set of files with year metadata", options, true);
             }
-        } else {
-            logger.warning("No valid arguments");
+        } catch (ParseException ex) {
+            logger.log(Level.SEVERE, null, ex);
         }
     }
-
+    
 }

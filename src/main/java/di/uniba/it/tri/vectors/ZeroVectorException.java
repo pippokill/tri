@@ -37,11 +37,24 @@ package di.uniba.it.tri.vectors;
 
 import java.lang.Exception;
 
+/**
+ *
+ * @author pierpaolo
+ */
 public class ZeroVectorException extends Exception {
-  public ZeroVectorException() {
+
+    /**
+     *
+     */
+    public ZeroVectorException() {
     super();
   }
-  public ZeroVectorException(String message) {
+
+    /**
+     *
+     * @param message
+     */
+    public ZeroVectorException(String message) {
     super(message);
   }
 }

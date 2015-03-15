@@ -49,6 +49,13 @@ import java.util.Properties;
  */
 public class VectorStoreUtils {
 
+    /**
+     *
+     * @param type
+     * @param dimension
+     * @param seed
+     * @return
+     */
     public static String createHeader(VectorType type, int dimension, int seed) {
         StringBuilder sb = new StringBuilder();
         sb.append("-type\t").append(type.name());
@@ -57,6 +64,12 @@ public class VectorStoreUtils {
         return sb.toString();
     }
 
+    /**
+     *
+     * @param line
+     * @return
+     * @throws IllegalArgumentException
+     */
     public static Properties readHeader(String line) throws IllegalArgumentException {
         Properties props = new Properties();
         String[] split = line.split("\t");
@@ -70,6 +83,15 @@ public class VectorStoreUtils {
         return props;
     }
 
+    /**
+     *
+     * @param outputFile
+     * @param vectors
+     * @param type
+     * @param dimension
+     * @param seed
+     * @throws IOException
+     */
     public static void saveSpace(File outputFile, Map<String, Vector> vectors, VectorType type, int dimension, int seed) throws IOException {
         DataOutputStream outputStream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(outputFile)));
         String header = VectorStoreUtils.createHeader(VectorType.REAL, dimension, seed);

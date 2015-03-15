@@ -41,15 +41,28 @@ package di.uniba.it.tri.vectors;
  * @author Dominic Widdows
  */
 public class IncompatibleVectorsException extends RuntimeException {
-  public IncompatibleVectorsException() {
+
+    /**
+     *
+     */
+    public IncompatibleVectorsException() {
     super();
   }
 
-  public IncompatibleVectorsException(String message) {
+    /**
+     *
+     * @param message
+     */
+    public IncompatibleVectorsException(String message) {
     super(message + "\nThis almost certainly indicates a programming error!");
   }
   
-  public static void checkVectorsCompatible(Vector first, Vector second) {
+    /**
+     *
+     * @param first
+     * @param second
+     */
+    public static void checkVectorsCompatible(Vector first, Vector second) {
     if (first == null) throw new NullPointerException("first vector cannot be null");
     if (second == null) throw new NullPointerException("second vector cannot be null");
     

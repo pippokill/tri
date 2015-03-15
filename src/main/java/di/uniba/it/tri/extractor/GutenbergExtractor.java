@@ -12,7 +12,7 @@ import java.io.IOException;
 import java.io.StringReader;
 
 /**
- *
+ * Extract textual content from a file in the Gutenberg format
  * @author pierpaolo
  */
 public class GutenbergExtractor implements Extractor {

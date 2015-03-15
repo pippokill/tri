@@ -38,7 +38,7 @@ import java.io.File;
 import java.util.Objects;
 
 /**
- *
+ * This class describes a single paper in the AAN corpus
  * @author pierpaolo
  */
 public class Paper {
@@ -49,30 +49,58 @@ public class Paper {
     
     private String id;
 
+    /**
+     * Create a Paper using the specified paper id
+     * @param id The paper id
+     */
     public Paper(String id) {
         this.id = id;
     }
 
+    /**
+     * Get the paper year
+     * @return The paper year
+     */
     public int getYear() {
         return year;
     }
 
+    /**
+     * Set the paper year
+     * @param year The paper year
+     */
     public void setYear(int year) {
         this.year = year;
     }
 
+    /**
+     * Get the paper file
+     * @return The paper file
+     */
     public File getFile() {
         return file;
     }
 
+    /**
+     * Set the paper file
+     * @param file The paper file
+     */
     public void setFile(File file) {
         this.file = file;
     }
 
+    /**
+     * Get the paper id
+     * @return The paper id
+     */
     public String getId() {
         return id;
     }
 
+    /**
+     * Set the paper id
+     * @param id The paper id
+     */
     public void setId(String id) {
         this.id = id;
     }

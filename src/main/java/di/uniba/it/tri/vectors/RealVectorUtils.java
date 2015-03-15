@@ -42,6 +42,10 @@ import cern.colt.matrix.tfcomplex.impl.DenseFComplexMatrix1D;
 import cern.colt.matrix.tfloat.impl.DenseFloatMatrix1D;
 import cern.jet.math.tfcomplex.FComplex;
 
+/**
+ *
+ * @author pierpaolo
+ */
 public class RealVectorUtils {
   private static final Logger logger = Logger.getLogger(RealVectorUtils.class.getCanonicalName());
 
@@ -55,6 +59,7 @@ public class RealVectorUtils {
    * vector for vectors[last] NOT (vectors[0] OR ... OR vectors[last - 1].
    *
    * @param list ArrayList of real vectors to be orthogonalized in place.
+     * @return 
    */
   public static boolean orthogonalizeVectors(List<Vector> list) {
     int dimension = list.get(0).getDimension();
@@ -84,6 +89,9 @@ public class RealVectorUtils {
    * Returns the circular convolution of the two input vectors.
    * 
    * See Plate, Holographic Reduced Representations, Section 3.1
+     * @param first
+     * @param second
+     * @return 
    */
   public static RealVector fftConvolution(RealVector first, RealVector second) {
     IncompatibleVectorsException.checkVectorsCompatible(first, second);
@@ -112,6 +120,9 @@ public class RealVectorUtils {
    * 
    * (This would probably be needed for inverse convolution to work, if we used scalar
    * product rather than cosine similarity for {@link RealVector#measureOverlap(Vector)}.)
+     * @param first
+     * @param second
+     * @return 
    */
   public static RealVector normalizedConvolution(RealVector first, RealVector second) {
     first.normalize();
@@ -124,6 +135,8 @@ public class RealVectorUtils {
 
   /**
    * Returns the involution (the vector with the coordinates reversed).
+     * @param vector
+     * @return 
    */
   public static RealVector getInvolution(RealVector vector) {
     vector.sparseToDense();
@@ -142,6 +155,9 @@ public class RealVectorUtils {
    * Only expected to be an approximate inverse in high dimensions.
    *
    * See Plate, Holographic Reduced Representations, Section 3.1.3
+     * @param first
+     * @param second
+     * @return 
    */
   public static RealVector fftApproxInvConvolution(RealVector first, RealVector second) {
     return fftConvolution(getInvolution(first), second);

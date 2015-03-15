@@ -51,10 +51,18 @@ public class MapVectorReader implements VectorReader {
     
     private int dimension;
 
+    /**
+     *
+     * @param memory
+     */
     public MapVectorReader(Map<String, Vector> memory) {
         this.memory = memory;
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     public void init() throws IOException {
         Iterator<Vector> iterator = memory.values().iterator();
         if (iterator.hasNext()) {
@@ -62,34 +70,65 @@ public class MapVectorReader implements VectorReader {
         }
     }
 
+    /**
+     *
+     * @param key
+     * @return
+     * @throws IOException
+     */
     public Vector getVector(String key) throws IOException {
         return memory.get(key);
     }
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public Iterator<String> getKeys() throws IOException {
         return memory.keySet().iterator();
     }
 
+    /**
+     *
+     * @throws IOException
+     */
     public void close() throws IOException {
         memory.clear();
     }
 
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     @Override
     public Iterator<ObjectVector> getAllVectors() throws IOException {
         return new MemoryVectorIterator(memory);
     }
 
+    /**
+     *
+     * @return
+     */
     @Override
     public int getDimension() {
         return this.dimension;
     }
 
+    /**
+     *
+     */
     public final class MemoryVectorIterator implements Iterator<ObjectVector> {
 
         private final Map<String, Vector> memory;
 
         private final Iterator<String> internalIterator;
 
+        /**
+         *
+         * @param memory
+         */
         public MemoryVectorIterator(Map<String, Vector> memory) {
             this.memory = memory;
             this.internalIterator = this.memory.keySet().iterator();

@@ -44,16 +44,44 @@ import java.util.Iterator;
  */
 public interface VectorReader {
     
+    /**
+     *
+     * @throws IOException
+     */
     public void init() throws IOException;
     
+    /**
+     *
+     * @throws IOException
+     */
     public void close() throws IOException;
     
+    /**
+     *
+     * @param key
+     * @return
+     * @throws IOException
+     */
     public Vector getVector(String key) throws IOException;
     
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public Iterator<String> getKeys() throws IOException;
     
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public Iterator<ObjectVector> getAllVectors() throws IOException;
     
+    /**
+     *
+     * @return
+     */
     public int getDimension();
     
 }

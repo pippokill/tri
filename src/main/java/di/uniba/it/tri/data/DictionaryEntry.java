@@ -38,7 +38,7 @@ package di.uniba.it.tri.data;
 import java.util.Objects;
 
 /**
- *
+ * This paper describes a single entry in the dictionary. Each entry is composed of a word and its occurrences
  * @author pierpaolo
  */
 public class DictionaryEntry implements Comparable<DictionaryEntry> {
@@ -47,23 +47,44 @@ public class DictionaryEntry implements Comparable<DictionaryEntry> {
     
     private int counter;
 
+    /**
+     * Create a new dictionary entry given the word and the occurrences
+     * @param word The word
+     * @param counter The occurrences
+     */
     public DictionaryEntry(String word, int counter) {
         this.word = word;
         this.counter = counter;
     }
 
+    /**
+     * Get the word
+     * @return The word
+     */
     public String getWord() {
         return word;
     }
 
+    /**
+     * Set the word
+     * @param word The word
+     */
     public void setWord(String word) {
         this.word = word;
     }
 
+    /**
+     * Get the occurrences
+     * @return The occurrences
+     */
     public int getCounter() {
         return counter;
     }
 
+    /**
+     * Set the occurrences
+     * @param counter The occurrences
+     */
     public void setCounter(int counter) {
         this.counter = counter;
     }
@@ -100,10 +121,17 @@ public class DictionaryEntry implements Comparable<DictionaryEntry> {
         return "DictionaryEntry{" + "word=" + word + ", counter=" + counter + '}';
     }
     
+    /**
+     * Increment the occurrences
+     */
     public void incrementCounter() {
         this.counter++;
     }
     
+    /**
+     * Increment the occurrences given a specified value
+     * @param incr The value used to increment the occurrences
+     */
     public void incrementCounter(int incr) {
         this.counter+=incr;
     }

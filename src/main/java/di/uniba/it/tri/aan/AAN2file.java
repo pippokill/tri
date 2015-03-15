@@ -42,15 +42,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.commons.cli.BasicParser;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
 import org.apache.commons.io.FileUtils;
 
 /**
- *
+ * Convert the ACL-AAN corpus in a single file for each paper with year metadata.
  * @author pierpaolo
  */
 public class AAN2file {
 
-    public static final int[] yearsdir = new int[]{2008, 2009, 2010, 2011, 2012, 2013};
+    private static final int[] YEAR_DIRS = new int[]{2008, 2009, 2010, 2011, 2012, 2013};
 
     private String getValue(String line) {
         int s = line.indexOf("{");
@@ -91,9 +96,15 @@ public class AAN2file {
         return list;
     }
 
+    /**
+     * Convert the ACL-AAN corpus in a single file for each paper with year metadata
+     * @param anndirname The ACL-ANN corpus directory
+     * @param outputdirname Output directory where files will be stored
+     * @throws Exception
+     */
     public void build(String anndirname, String outputdirname) throws Exception {
-        for (int i = 0; i < yearsdir.length; i++) {
-            File metadatafile = new File(anndirname + "/release/" + yearsdir[i] + "/acl-metadata.txt");
+        for (int i = 0; i < YEAR_DIRS.length; i++) {
+            File metadatafile = new File(anndirname + "/release/" + YEAR_DIRS[i] + "/acl-metadata.txt");
             List<Paper> list = loadPaperList(metadatafile, anndirname + "/papers_text/");
             for (Paper paper : list) {
                 if (paper.getFile().exists()) {
@@ -107,20 +118,31 @@ public class AAN2file {
             }
         }
     }
+    
+    static Options options;
+
+    static CommandLineParser cmdParser = new BasicParser();
+
+    static {
+        options = new Options();
+        options.addOption("c", true, "AAN corpus directory")
+                .addOption("o", true, "Output directory where files will be stored");
+    }
 
     /**
-     * Convert ACL dataset in a single file for each paper with year reference
-     * aan_dir output_dir
+     * Convert the ACL-AAN corpus in a single file for each paper with year metadata.
      *
      * @param args the command line arguments
      */
     public static void main(String[] args) {
         try {
-            if (args.length > 1) {
+            CommandLine cmd = cmdParser.parse(options, args);
+            if (cmd.hasOption("c") && cmd.hasOption("o")) {
                 AAN2file ann = new AAN2file();
-                ann.build(args[0], args[1]);
+                ann.build(cmd.getOptionValue("c"), cmd.getOptionValue("o"));
             } else {
-                throw new Exception("Illegal arguments");
+                HelpFormatter helpFormatter = new HelpFormatter();
+                helpFormatter.printHelp("Convert the ACL-AAN corpus in a single file for each paper with the year metadata", options, true);
             }
         } catch (Exception ex) {
             Logger.getLogger(AAN2file.class.getName()).log(Level.SEVERE, null, ex);

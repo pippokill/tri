@@ -60,7 +60,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Version;
 
 /**
- *
+ * This class is used as the wrapper to interpret and execute commands from the shell
  * @author pierpaolo
  */
 public class Command {
@@ -87,18 +87,34 @@ public class Command {
 
     private static final String os = "-";
 
+    /**
+     *
+     */
     public Command() {
         initHelp();
     }
 
+    /**
+     * Get the main directory of the RI spaces
+     * @return The main directory of the RI spaces
+     */
     public File getMainDir() {
         return mainDir;
     }
 
+    /**
+     * Set the main directory of the RI spaces
+     * @param mainDir The main directory of the RI spaces
+     */
     public void setMainDir(File mainDir) {
         this.mainDir = mainDir;
     }
 
+    /**
+     * Execute a command given the command line
+     * @param command The command line
+     * @throws Exception
+     */
     public void executeCommand(String command) throws Exception {
         if (command.startsWith("indexelem ")) {
             indexelem();
@@ -488,6 +504,10 @@ public class Command {
         }
     }
 
+    /**
+     * Close all vector readers and clear stores
+     * @throws Exception
+     */
     public void close() throws Exception {
         for (VectorReader vr : stores.values()) {
             vr.close();
@@ -499,15 +519,23 @@ public class Command {
         }
     }
 
+    /**
+     * Print the full help on the shell
+     */
     public void fullHelp() {
         if (help != null) {
             Iterator<String> iterator = help.stringPropertyNames().iterator();
             while (iterator.hasNext()) {
-                TriShell.println(iterator.next());
+                String cmd = iterator.next();
+                TriShell.println(cmd+"\t"+help.getProperty(cmd));
             }
         }
     }
 
+    /**
+     * Print the command help on the shell
+     * @param cmd The command
+     */
     public void help(String cmd) {
         if (help != null) {
             if (cmd.equals("*")) {

@@ -48,16 +48,32 @@ public class ObjectVector implements Comparable<ObjectVector> {
 
     private double score = 1;
 
+    /**
+     *
+     * @param key
+     * @param score
+     */
     public ObjectVector(String key, double score) {
         this.key = key;
         this.score = score;
     }
 
+    /**
+     *
+     * @param key
+     * @param vector
+     */
     public ObjectVector(String key, Vector vector) {
         this.key = key;
         this.vector = vector;
     }
 
+    /**
+     *
+     * @param key
+     * @param vector
+     * @param score
+     */
     public ObjectVector(String key, Vector vector, double score) {
         this.key = key;
         this.vector = vector;
@@ -96,26 +112,50 @@ public class ObjectVector implements Comparable<ObjectVector> {
         return Double.compare(score, o.score);
     }
 
+    /**
+     *
+     * @return
+     */
     public String getKey() {
         return key;
     }
 
+    /**
+     *
+     * @param key
+     */
     public void setKey(String key) {
         this.key = key;
     }
 
+    /**
+     *
+     * @return
+     */
     public Vector getVector() {
         return vector;
     }
 
+    /**
+     *
+     * @param vector
+     */
     public void setVector(Vector vector) {
         this.vector = vector;
     }
 
+    /**
+     *
+     * @return
+     */
     public double getScore() {
         return score;
     }
 
+    /**
+     *
+     * @param score
+     */
     public void setScore(double score) {
         this.score = score;
     }

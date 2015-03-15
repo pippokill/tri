@@ -51,6 +51,9 @@ public class PermutationUtils {
 
   /**
    * Returns dimension for real and complex vectors, or dimension / 64 for binary vectors.
+     * @param vectorType
+     * @param dimension
+     * @return 
    */
   public static int getPermutationLength(VectorType vectorType, int dimension) {
     return (vectorType != VectorType.BINARY) ? dimension : dimension / 64; 
@@ -76,7 +79,12 @@ public class PermutationUtils {
     return permutation;
   }
 
-  public static int[] getInversePermutation(int[] permutation) {
+    /**
+     *
+     * @param permutation
+     * @return
+     */
+    public static int[] getInversePermutation(int[] permutation) {
     int[] inversePermutation = new int[permutation.length];
     for (int x=0; x < permutation.length; x++) {
       inversePermutation[permutation[x]] = x;

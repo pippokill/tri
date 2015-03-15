@@ -52,6 +52,7 @@ public interface Vector {
 
   /**
    * Returns a copy of this vector.
+     * @return 
    */
   public abstract Vector copy();
   
@@ -66,20 +67,26 @@ public interface Vector {
    * @param numEntries number of non-zero entries, usually a combination of +/-1 entries 
    *        as determined by implementation
    * @param random random seed for generation
+     * @return 
    */
   public abstract Vector generateRandomVector(int dimension, int numEntries, Random random);
   
-  /** Returns the dimension of the vector. */
+  /** Returns the dimension of the vector.
+     * @return  */
   public abstract int getDimension();
   
-  /** Returns the {@link VectorType} of the vector. */
+  /** Returns the {@link VectorType} of the vector.
+     * @return  */
   public abstract VectorType getVectorType(); 
   
-  /** Returns true if this is a representation of a zero vector. */
+  /** Returns true if this is a representation of a zero vector.
+     * @return  */
   public abstract boolean isZeroVector();
   
   /**
    * Returns a canonical overlap measure (usually between 0 and 1) between this and other.
+     * @param other
+     * @return 
    */
   public abstract double measureOverlap(Vector other);
   
@@ -100,11 +107,13 @@ public interface Vector {
 
   /**
    * Binds the other vector to this one.
+     * @param other
    */
   public abstract void bind(Vector other);
  
   /**
    * Inverse of the binding operator. May be an approximate inverse.
+     * @param other
    */
   public abstract void release(Vector other);
   
@@ -117,25 +126,33 @@ public interface Vector {
   
   /**
    * Writes vector to Lucene output stream.  Writes exactly {@link #getDimension} coordinates.
+     * @param outputStream
    */
   public abstract void writeToStream(DataOutputStream outputStream);
 
   /**
    * Reads vector from Lucene input stream.  Reads exactly {@link #getDimension} coordinates.
+     * @param inputStream
    */
   public abstract void readFromStream(DataInputStream inputStream);
   
   /**
    * Writes vector to text representation.  Writes exactly {@link #getDimension} coordinates.
+     * @return 
    */
   public abstract String writeToString();
 
   /**
    * Reads vector from text representation.  Reads exactly {@link #getDimension} coordinates.
+     * @param input
    */
   public abstract void readFromString(String input);
  
-  @Override
+    /**
+     *
+     * @return
+     */
+    @Override
  /**
   * Subclasses must implement a string representation for debugging. This may be different and
   * more explicit than the {@code writeToString} method.

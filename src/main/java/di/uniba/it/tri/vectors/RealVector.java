@@ -69,17 +69,28 @@ public class RealVector implements Vector {
         CONVOLUTION
     }
 
+    /**
+     *
+     */
     public static RealBindMethod BIND_METHOD = RealBindMethod.CONVOLUTION;
 
+    /**
+     *
+     * @param bindMethod
+     */
     public static void setBindType(RealBindMethod bindMethod) {
         logger.info("Globally setting real vector BIND_METHOD to: '" + bindMethod + "'");
         BIND_METHOD = bindMethod;
     }
 
+    /**
+     *
+     */
     public static final Logger logger = Logger.getLogger(RealVector.class.getCanonicalName());
 
     /**
      * Returns {@link VectorType#REAL}
+     * @return 
      */
     public VectorType getVectorType() {
         return VectorType.REAL;
@@ -98,6 +109,10 @@ public class RealVector implements Vector {
     private short[] sparseOffsets;
     private boolean isSparse;
 
+    /**
+     *
+     * @param dimension
+     */
     protected RealVector(int dimension) {
         this.dimension = dimension;
         this.sparseOffsets = new short[0];
@@ -106,6 +121,7 @@ public class RealVector implements Vector {
 
     /**
      * Returns a new copy of this vector, in dense format.
+     * @return 
      */
     public RealVector copy() {
         if (isSparse) {
@@ -148,6 +164,11 @@ public class RealVector implements Vector {
         return dimension;
     }
 
+    /**
+     *
+     * @param dimension
+     * @return
+     */
     public RealVector createZeroVector(int dimension) {
         return new RealVector(dimension);
     }
@@ -184,6 +205,7 @@ public class RealVector implements Vector {
      * If seedlength == dimension, a dense real vector is generated instead,
      * with each dimension initialized to a real value between -1 and 1
      *
+     * @param seedLength
      * @return Sparse representation of basic ternary vector.
      */
     public RealVector generateRandomVector(int dimension, int seedLength, Random random) {
@@ -228,6 +250,9 @@ public class RealVector implements Vector {
      * Generates a basic dense vector with values assigned at random to a real
      * value between -1 and 1
      *
+     * @param dimension
+     * @param seedLength
+     * @param random
      * @return Dense representation of basic real vector.
      */
     public RealVector generateDenseRandomVector(int dimension, int seedLength, Random random) {
@@ -353,6 +378,10 @@ public class RealVector implements Vector {
         }
     }
 
+    /**
+     *
+     * @param realOther
+     */
     public void bindWithConvolution(RealVector realOther) {
         RealVector result = RealVectorUtils.fftConvolution(this, realOther);
         this.coordinates = result.coordinates;
@@ -360,6 +389,7 @@ public class RealVector implements Vector {
 
     /**
      * Implements release using {@link RealVectorUtils#fftApproxInvConvolution}
+     * @param other
      */
     public void releaseWithConvolution(RealVector other) {
         RealVector result = RealVectorUtils.fftApproxInvConvolution(other, this);
@@ -369,6 +399,7 @@ public class RealVector implements Vector {
     /**
      * Implements binding as a single-shift permutation. Currently wasteful;
      * allocates the permutation array each time.
+     * @param other
      */
     public void bindWithPermutation(RealVector other) {
         RealVector result = createZeroVector(dimension);
@@ -381,6 +412,7 @@ public class RealVector implements Vector {
 
     /**
      * Implements release using the {@link #bindWithPermutation}.
+     * @param other
      */
     public void releaseWithPermutation(RealVector other) {
         RealVector result = createZeroVector(dimension);
@@ -522,6 +554,7 @@ public class RealVector implements Vector {
     /**
      * Available to support access to coordinates for legacy operations. Try not
      * to use in new code!
+     * @return 
      */
     public float[] getCoordinates() {
         if (isSparse) {
@@ -535,6 +568,7 @@ public class RealVector implements Vector {
 
     /**
      * Available for testing and copying. Try not to use in new code!
+     * @param coordinates
      */
     public RealVector(float[] coordinates) {
         this.dimension = coordinates.length;
@@ -543,6 +577,8 @@ public class RealVector implements Vector {
 
     /**
      * Available for testing and copying. Try not to use in new code!
+     * @param dimension
+     * @param sparseOffsets
      */
     public RealVector(int dimension, short[] sparseOffsets) {
         this.isSparse = true;

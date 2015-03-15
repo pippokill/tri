@@ -66,11 +66,16 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
 
 /**
- *
+ * Utils for managing WordSpaces
  * @author pierpaolo
  */
 public class TemporalSpaceUtils {
 
+    /**
+     * Combine two or more WordSpaces using vectors sum
+     * @param spaces WordSpaces
+     * @return The WordSpace as a Map that is the combination of given WordSpaces
+     */
     public static Map<String, Vector> combineSpaces(Map<String, Vector>... spaces) {
         Map<String, Vector> newSpace = new HashMap<>();
         for (Map<String, Vector> space : spaces) {
@@ -93,6 +98,12 @@ public class TemporalSpaceUtils {
         return newSpace;
     }
 
+    /**
+     * Combine two or more VectorReaders using vectors sum
+     * @param readers VectorReaders
+     * @return The WordSpace as a Map that is the combination of given VectorReaders
+     * @throws IOException
+     */
     public static Map<String, Vector> combineVectorReader(VectorReader... readers) throws IOException {
         Map<String, Vector> newSpace = new HashMap<>();
         for (VectorReader reader : readers) {
@@ -114,6 +125,12 @@ public class TemporalSpaceUtils {
         return newSpace;
     }
 
+    /**
+     * Combine two or more VectorReaders using vectors sum
+     * @param readers VectorReaders
+     * @return The VectorReader that is the combination of given VectorReaders
+     * @throws IOException
+     */
     public static VectorReader combineAndBuildVectorReader(VectorReader... readers) throws IOException {
         Map<String, Vector> newSpace = new HashMap<>();
         System.out.println();
@@ -138,6 +155,12 @@ public class TemporalSpaceUtils {
         return new MapVectorReader(newSpace);
     }
 
+    /**
+     * Combine two or more VectorReaders using vectors sum and save the result in a File
+     * @param outputFile The File
+     * @param readers VectorReaders
+     * @throws IOException
+     */
     public static void combineAndSaveVectorReader(File outputFile, VectorReader... readers) throws IOException {
         Map<String, Vector> newSpace = new HashMap<>();
         System.out.println();
@@ -178,6 +201,14 @@ public class TemporalSpaceUtils {
         newSpace = null;
     }
 
+    /**
+     * Return the list of the n nearest vectors given a word
+     * @param store The VectorReader that contains vectors
+     * @param word The word
+     * @param n The number of nearest vectors
+     * @return The list of the n nearest vectors
+     * @throws IOException
+     */
     public static List<ObjectVector> getNearestVectors(VectorReader store, String word, int n) throws IOException {
         Vector vector = store.getVector(word);
         if (vector != null) {
@@ -187,6 +218,14 @@ public class TemporalSpaceUtils {
         }
     }
 
+    /**
+     * Return the list of the n nearest vectors given a vector
+     * @param store The VectorReader that contains vectors
+     * @param vector The vector
+     * @param n The number of nearest vectors
+     * @return The list of the n nearest vectors
+     * @throws IOException
+     */
     public static List<ObjectVector> getNearestVectors(VectorReader store, Vector vector, int n) throws IOException {
         PriorityQueue<ObjectVector> queue = new PriorityQueue<>();
         Iterator<ObjectVector> allVectors = store.getAllVectors();
@@ -207,6 +246,13 @@ public class TemporalSpaceUtils {
         return list;
     }
 
+    /**
+     * Given a directory of stored vector file readers returns the list of files belonging to a specified time period
+     * @param startDir The directory
+     * @param start The begin of the time period
+     * @param end The end of the time period
+     * @return The list of files
+     */
     public static List<File> getFileTemporalRange(File startDir, int start, int end) {
         List<File> list = new ArrayList<>();
         File[] listFiles = startDir.listFiles();
@@ -222,6 +268,13 @@ public class TemporalSpaceUtils {
         return list;
     }
 
+    /**
+     * Return a list of available years given the directory where file readers are stored and the time period
+     * @param startDir The directory
+     * @param start The begin of the time period
+     * @param end The end of the time period
+     * @return The list of available years
+     */
     public static List<String> getAvailableYears(File startDir, int start, int end) {
         List<String> list = new ArrayList<>();
         File[] listFiles = startDir.listFiles();
@@ -237,11 +290,23 @@ public class TemporalSpaceUtils {
         return list;
     }
 
+    /**
+     * Index the file of elemental vectors
+     * @param stardDir The directory containing the WordSpaces
+     * @return The index of elemental vectors
+     * @throws IOException
+     */
     public static IndexReader indexElemental(File stardDir) throws IOException {
         File elementalFile = getElementalFile(stardDir);
         return index(elementalFile);
     }
 
+    /**
+     * Index a VectorReader in order to search words
+     * @param vreader The VectorReader
+     * @return The index
+     * @throws IOException
+     */
     public static IndexReader index(VectorReader vreader) throws IOException {
         Iterator<String> keys = vreader.getKeys();
         RAMDirectory ramDir = new RAMDirectory();
@@ -257,6 +322,12 @@ public class TemporalSpaceUtils {
         return IndexReader.open(ramDir);
     }
 
+    /**
+     * Index a file in order to search words
+     * @param file The file
+     * @return The index
+     * @throws IOException
+     */
     public static IndexReader index(File file) throws IOException {
         FileVectorReader vreader = new FileVectorReader(file);
         vreader.init();
@@ -265,18 +336,43 @@ public class TemporalSpaceUtils {
         return index;
     }
 
+    /**
+     * Get the elemental vectors file
+     * @param startDir The directory containing the WordSpaces
+     * @return
+     */
     public static File getElementalFile(File startDir) {
         return new File(startDir.getAbsolutePath() + "/vectors.elemental");
     }
 
+    /**
+     * Get the file in which vectors of a specified year are stored
+     * @param startDir The directory containing the WordSpaces
+     * @param year The year
+     * @return The file
+     */
     public static File getVectorFile(File startDir, int year) {
         return getVectorFile(startDir, String.valueOf(year));
     }
 
+    /**
+     * Get the file in which vectors of a specified year are stored
+     * @param startDir The directory containing the WordSpaces
+     * @param year The year
+     * @return The file
+     */
     public static File getVectorFile(File startDir, String year) {
         return new File(startDir.getAbsolutePath() + "/count_" + year + ".vectors");
     }
 
+    /**
+     * Return the less n similar vectors in two WordSpaces
+     * @param store1 The first Vector Reader
+     * @param store2 The second Vector Reader
+     * @param n The number of vectors
+     * @return The list of less n similar vectors
+     * @throws IOException
+     */
     public static List<ObjectVector> sims(VectorReader store1, VectorReader store2, int n) throws IOException {
         PriorityQueue<ObjectVector> queue = new PriorityQueue<>();
         Iterator<ObjectVector> allVectors = store1.getAllVectors();
@@ -307,6 +403,12 @@ public class TemporalSpaceUtils {
         return list;
     }
 
+    /**
+     * Count the number of vectors in a VectorReader
+     * @param reader The VectorReader
+     * @return The number of vectors
+     * @throws IOException
+     */
     public static int countVectors(VectorReader reader) throws IOException {
         Iterator<ObjectVector> allVectors = reader.getAllVectors();
         int counter = 0;

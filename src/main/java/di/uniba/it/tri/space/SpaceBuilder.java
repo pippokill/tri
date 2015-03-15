@@ -55,6 +55,12 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import org.apache.commons.cli.BasicParser;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 /**
  *
@@ -76,61 +82,121 @@ public class SpaceBuilder {
 
     private final Pattern noaPattern = Pattern.compile("^.+_+$");
 
+    /**
+     *
+     * @param startingDir
+     */
     public SpaceBuilder(File startingDir) {
         this.startingDir = startingDir;
     }
 
+    /**
+     *
+     * @param startingDir
+     * @param dimension
+     */
     public SpaceBuilder(File startingDir, int dimension) {
         this.startingDir = startingDir;
         this.dimension = dimension;
     }
 
+    /**
+     *
+     * @param startingDir
+     * @param dimension
+     * @param seed
+     */
     public SpaceBuilder(File startingDir, int dimension, int seed) {
         this.startingDir = startingDir;
         this.dimension = dimension;
         this.seed = seed;
     }
 
+    /**
+     *
+     * @return
+     */
     public int getDimension() {
         return dimension;
     }
 
+    /**
+     *
+     * @param dimension
+     */
     public void setDimension(int dimension) {
         this.dimension = dimension;
     }
 
+    /**
+     *
+     * @return
+     */
     public int getSeed() {
         return seed;
     }
 
+    /**
+     *
+     * @param seed
+     */
     public void setSeed(int seed) {
         this.seed = seed;
     }
 
+    /**
+     *
+     * @return
+     */
     public int getMaxNoAplhaChar() {
         return maxNoAplhaChar;
     }
 
+    /**
+     *
+     * @param maxNoAplhaChar
+     */
     public void setMaxNoAplhaChar(int maxNoAplhaChar) {
         this.maxNoAplhaChar = maxNoAplhaChar;
     }
 
+    /**
+     *
+     * @return
+     */
     public File getStartingDir() {
         return startingDir;
     }
 
+    /**
+     *
+     * @param startingDir
+     */
     public void setStartingDir(File startingDir) {
         this.startingDir = startingDir;
     }
 
+    /**
+     *
+     * @return
+     */
     public int getSize() {
         return size;
     }
 
+    /**
+     *
+     * @param size
+     */
     public void setSize(int size) {
         this.size = size;
     }
 
+    /**
+     *
+     * @param outputDir
+     * @throws IOException
+     */
     public void build(File outputDir) throws IOException {
         if (!outputDir.exists()) {
             outputDir.mkdir();
@@ -230,24 +296,43 @@ public class SpaceBuilder {
         return list;
     }
 
+    static Options options;
+
+    static CommandLineParser cmdParser = new BasicParser();
+
+    static {
+        options = new Options();
+        options.addOption("c", true, "The directory containing the co-occurrences matrices")
+                .addOption("o", true, "Output directory where WordSpaces will be stored")
+                .addOption("d", true, "The vector dimension (optional, defaults 300)")
+                .addOption("s", true, "The number of seeds (optional, defaults 10)")
+                .addOption("v", true, "The dictionary size (optional, defaults 100.000)");
+    }
+
     /**
-     * startingDir outputDir dimension seed dictionarySize
+     * Build WordSpace using Temporal Random Indexing
      *
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        if (args.length == 5) {
-            try {
-                SpaceBuilder builder = new SpaceBuilder(new File(args[0]));
-                builder.setDimension(Integer.parseInt(args[2]));
-                builder.setSeed(Integer.parseInt(args[3]));
-                builder.setSize(Integer.parseInt(args[4]));
-                builder.build(new File(args[1]));
-            } catch (IOException | NumberFormatException ex) {
-                logger.log(Level.SEVERE, null, ex);
+        try {
+            CommandLine cmd = cmdParser.parse(options, args);
+            if (cmd.hasOption("c") && cmd.hasOption("o")) {
+                try {
+                    SpaceBuilder builder = new SpaceBuilder(new File(cmd.getOptionValue("c")));
+                    builder.setDimension(Integer.parseInt(cmd.getOptionValue("d", "300")));
+                    builder.setSeed(Integer.parseInt(cmd.getOptionValue("s", "10")));
+                    builder.setSize(Integer.parseInt(cmd.getOptionValue("v", "100000")));
+                    builder.build(new File(cmd.getOptionValue("o")));
+                } catch (IOException | NumberFormatException ex) {
+                    logger.log(Level.SEVERE, null, ex);
+                }
+            } else {
+                HelpFormatter helpFormatter = new HelpFormatter();
+                helpFormatter.printHelp("Build WordSpace using Temporal Random Indexing", options, true);
             }
-        } else {
-            logger.warning("No valid arguments");
+        } catch (ParseException ex) {
+            Logger.getLogger(SpaceBuilder.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 

@@ -11,11 +11,17 @@ import java.io.IOException;
 import java.io.StringReader;
 
 /**
- *
+ * Interface for classes that extract textual content from a file
  * @author pierpaolo
  */
 public interface Extractor {
     
+    /**
+     * Given a file extract the textual content
+     * @param txtfile The file
+     * @return The StingReader containg the textual content
+     * @throws IOException
+     */
     public StringReader extract(File txtfile) throws IOException;
     
 }

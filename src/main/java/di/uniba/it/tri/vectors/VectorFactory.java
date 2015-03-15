@@ -45,6 +45,12 @@ public class VectorFactory {
 
     private static final RealVector realInstance = new RealVector(0);
 
+    /**
+     *
+     * @param type
+     * @param dimension
+     * @return
+     */
     public static Vector createZeroVector(VectorType type, int dimension) {
         switch (type) {
             case BINARY:
@@ -88,6 +94,9 @@ public class VectorFactory {
     /**
      * Returns the size in bytes expected to be taken up by the serialization of
      * this vector in Lucene format.
+     * @param vectorType
+     * @param dimension
+     * @return 
      */
     public static int getByteSize(VectorType vectorType, int dimension) {
         switch (vectorType) {

@@ -44,21 +44,29 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.commons.cli.BasicParser;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 /**
- * Interactive command line tool to access a database using JDBC.
+ * Interactive command line tool
  *
- * @h2.resource
  */
 public class TriShell {
 
-    private static final int HISTORY_COUNT = 20;
+    private static final int HISTORY_COUNT = 100;
     private static final String PROMPT = "TRI";
     private InputStream in = System.in;
     private BufferedReader reader;
     private final List<String> history = new ArrayList();
     private Command command;
-    public static final String VERSION = "0.10a";
+
+    /**
+     *
+     */
+    public static final String VERSION = "0.20";
     private String charset = "ISO-8859-1";
     /**
      * The output stream where this tool writes to.
@@ -74,40 +82,85 @@ public class TriShell {
         TriShell.out = out;
     }
 
+    /**
+     * Set the class used as the wrapper to interpret and execute commands from
+     * the shell
+     *
+     * @return The class used as the wrapper to interpret and execute commands
+     * from the shell
+     */
     public Command getCommand() {
         return command;
     }
 
+    /**
+     * Get the class used as the wrapper to interpret and execute commands from
+     * the shell
+     *
+     * @param command The class used as the wrapper to interpret and execute
+     * commands from the shell
+     */
     public void setCommand(Command command) {
         this.command = command;
     }
 
+    /**
+     * Create a new shell given the charset
+     *
+     * @param charset The charset
+     */
     public TriShell(String charset) {
         this.charset = charset;
     }
 
+    /**
+     * Create a new shell
+     */
     public TriShell() {
     }
 
+    static Options options;
+
+    static CommandLineParser cmdParser = new BasicParser();
+
+    static {
+        options = new Options();
+        options.addOption("c", true, "The charset used by the shell (optional)");
+    }
+
     /**
+     * Run the TRI shell
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        TriShell shell = null;
-        if (args.length > 0) {
-            shell = new TriShell(args[0]);
-        } else {
-            shell = new TriShell();
+        try {
+            CommandLine cmd = cmdParser.parse(options, args);
+            TriShell shell = null;
+            if (cmd.hasOption("c")) {
+                shell = new TriShell(cmd.getOptionValue("c"));
+            } else {
+                shell = new TriShell();
+            }
+            Command command = new Command();
+            shell.setCommand(command);
+            shell.promptLoop();
+        } catch (ParseException ex) {
+            Logger.getLogger(TriShell.class.getName()).log(Level.SEVERE, null, ex);
         }
-        Command command = new Command();
-        shell.setCommand(command);
-        shell.promptLoop();
     }
 
+    /**
+     *
+     * @param errorMsg
+     */
     public static void printMessageError(String errorMsg) {
         println("Error: " + errorMsg);
     }
 
+    /**
+     *
+     * @param ex
+     */
     public static void printException(Exception ex) {
         printMessageError(ex.getMessage());
     }
@@ -131,17 +184,21 @@ public class TriShell {
     }
 
     private void showHelp() {
-        println("Commands are case insensitive");
-        println("help or ? <cmd>     Display this help");
-        println("history             Show the last 20 statements");
-        println("quit or exit        Close and exit");
+        println("Commands are case sensitive");
+        println("help or ?             Display this help");
+        println("help or ? <command>   Display the help of the specified <command>");
+        println("help or ? *           Display the help of all commands");
+        println("history               Show the last 100 statements");
+        println("quit or exit          Close and exit");
         println("");
     }
 
     private void promptLoop() {
         println("");
-        println("Welcome to Tri Shell " + VERSION);
-        println("Exit with quit or exit");
+        println("*** Welcome to Temporal Random Indexing (TRI) Shell " + VERSION+" ***");
+        println("Shell charset: "+charset);
+        println("");
+        showHelp();
 
         if (reader == null) {
             try {
@@ -161,10 +218,10 @@ public class TriShell {
                 if (trimmed.length() == 0) {
                     continue;
                 }
-                String cmd = trimmed.toLowerCase();
+                String cmd = trimmed.replaceAll("\\s+", " "); //remove not necessary whitespaces
                 if ("exit".equals(cmd) || "quit".equals(cmd)) {
                     break;
-                } else if (cmd.startsWith("help") || cmd.startsWith("?")) {
+                } else if (cmd.equals("help") || cmd.equals("?") || cmd.startsWith("help ") || cmd.startsWith("? ")) {
                     String[] split = cmd.split("\\s+");
                     if (split.length == 1) {
                         showHelp();
@@ -178,11 +235,11 @@ public class TriShell {
                         println("#" + (1 + i) + ": " + s);
                     }
                     if (history.size() > 0) {
-                        println("To re-run a statement, type runh and the number and press and enter");
+                        println("To re-run a statement, type runh and the number and press enter");
                     } else {
                         println("No history");
                     }
-                } else if (cmd.startsWith("runh")) {
+                } else if (cmd.startsWith("runh ")) {
                     String[] split = cmd.split("\\s+");
                     if (split.length > 1) {
                         if (split[1].matches("[0-9]+")) {
@@ -202,7 +259,7 @@ public class TriShell {
                 } else {
                     executeCommand(cmd);
                 }
-            } catch (Exception ex) {
+            } catch (IOException | NumberFormatException ex) {
                 println("No managed exception sorry...");
                 printException(ex);
                 exit(1);
@@ -233,6 +290,10 @@ public class TriShell {
         out.flush();
     }
 
+    /**
+     *
+     * @param s
+     */
     public static void println(String s) {
         out.println(s);
         out.flush();
@@ -260,6 +321,7 @@ public class TriShell {
                 System.exit(1);
             }
         }
+        System.err.println("Goodbye!");
         System.exit(code);
     }
 

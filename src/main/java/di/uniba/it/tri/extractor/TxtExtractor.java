@@ -12,10 +12,10 @@ import java.io.IOException;
 import java.io.StringReader;
 
 /**
- * Extract textual content from a paper in the AAN corpus
+ *
  * @author pierpaolo
  */
-public class AANExtractor implements Extractor {
+public class TxtExtractor implements Extractor {
 
     @Override
     public StringReader extract(File txtfile) throws IOException {
@@ -25,11 +25,6 @@ public class AANExtractor implements Extractor {
             sb.append(reader.readLine()).append("\n");
         }
         reader.close();
-        //remove reference
-        int l = sb.indexOf("References");
-        if (l >= 0) {
-            sb = sb.delete(l, sb.length());
-        }
         return new StringReader(sb.toString());
     }
 
