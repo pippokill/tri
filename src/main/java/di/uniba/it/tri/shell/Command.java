@@ -629,10 +629,10 @@ public class Command {
                     r.close();
                 }
             } else {
-                throw new Exception("tir syntax error");
+                throw new Exception("tri syntax error");
             }
         } else {
-            throw new Exception("tir syntax error");
+            throw new Exception("tri syntax error");
         }
     }
 
@@ -651,10 +651,10 @@ public class Command {
                     r.close();
                 }
             } else {
-                throw new Exception("tir syntax error");
+                throw new Exception("ftri syntax error");
             }
         } else {
-            throw new Exception("tir syntax error");
+            throw new Exception("ftri syntax error");
         }
     }
 
@@ -881,8 +881,8 @@ public class Command {
         help.setProperty("near", "near <number of results> <vector reader name> <vector name> - print nearest vectors");
         help.setProperty("sim", "sim <vector name 1> <vector name 2> - print vectors similarity");
         help.setProperty("count", "count <vector reader name> - return the number of vectors in the vector reader");
-        help.setProperty("tir", "tir <vector reader name> <start year> <end year> - create a new temporal space named vector reader name form start_year to end_year");
-        help.setProperty("ftir", "ftir <output filename> <start year> <end year> - create a new temporal space form start_year to end_year and save it on disk");
+        help.setProperty("tri", "tri <vector reader name> <start year> <end year> - create a new temporal space named vector reader name form start_year to end_year");
+        help.setProperty("ftri", "ftri <output filename> <start year> <end year> - create a new temporal space form start_year to end_year and save it on disk");
         help.setProperty("sims", "sims <number of results> <vector reader name1> <vector reader name2> - find words that change meaning between two WordSpaces");
         help.setProperty("compare", "compare <number of results> <vector reader name1> <vector reader name1> <vector name1> <vector name2> - compare nearest vectors of vector name1 in vector reader name1 and vector name2 in vector reader name2");
         //help of commands related to sets
