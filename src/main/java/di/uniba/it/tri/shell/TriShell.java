@@ -130,6 +130,7 @@ public class TriShell {
 
     /**
      * Run the TRI shell
+     *
      * @param args the command line arguments
      */
     public static void main(String[] args) {
@@ -195,8 +196,8 @@ public class TriShell {
 
     private void promptLoop() {
         println("");
-        println("*** Welcome to Temporal Random Indexing (TRI) Shell " + VERSION+" ***");
-        println("Shell charset: "+charset);
+        println("*** Welcome to Temporal Random Indexing (TRI) Shell " + VERSION + " ***");
+        println("Shell charset: " + charset);
         println("");
         showHelp();
 
@@ -221,7 +222,7 @@ public class TriShell {
                 String cmd = trimmed.replaceAll("\\s+", " "); //remove not necessary whitespaces
                 if ("exit".equals(cmd) || "quit".equals(cmd)) {
                     break;
-                } else if (cmd.equals("help") || cmd.equals("?") || cmd.startsWith("help ") || cmd.startsWith("? ")) {
+                } else if (cmd.matches("(^(help|\\?)$)|(^(help|\\?)\\s+.*$)")) {
                     String[] split = cmd.split("\\s+");
                     if (split.length == 1) {
                         showHelp();
@@ -239,7 +240,7 @@ public class TriShell {
                     } else {
                         println("No history");
                     }
-                } else if (cmd.startsWith("runh ")) {
+                } else if (cmd.matches("(^runh$)|(^runh\\s+.*$)")) {
                     String[] split = cmd.split("\\s+");
                     if (split.length > 1) {
                         if (split[1].matches("[0-9]+")) {

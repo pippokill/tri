@@ -60,7 +60,9 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.util.Version;
 
 /**
- * This class is used as the wrapper to interpret and execute commands from the shell
+ * This class is used as the wrapper to interpret and execute commands from the
+ * shell
+ *
  * @author pierpaolo
  */
 public class Command {
@@ -96,6 +98,7 @@ public class Command {
 
     /**
      * Get the main directory of the RI spaces
+     *
      * @return The main directory of the RI spaces
      */
     public File getMainDir() {
@@ -104,6 +107,7 @@ public class Command {
 
     /**
      * Set the main directory of the RI spaces
+     *
      * @param mainDir The main directory of the RI spaces
      */
     public void setMainDir(File mainDir) {
@@ -112,61 +116,62 @@ public class Command {
 
     /**
      * Execute a command given the command line
+     *
      * @param command The command line
      * @throws Exception
      */
     public void executeCommand(String command) throws Exception {
-        if (command.startsWith("indexelem ")) {
+        if (command.matches("(^indexelem$)|(^indexelem\\s+.*$)")) {
             indexelem();
-        } else if (command.startsWith("index ")) {
+        } else if (command.matches("(^index$)|(^index\\s+.*$)")) {
             index(command);
-        } else if (command.startsWith("search ")) {
+        } else if (command.matches("(^search$)|(^search\\s+.*$)")) {
             search(command);
-        } else if (command.startsWith("set ")) {
+        } else if (command.matches("(^set$)|(^set\\s+.*$)")) {
             set(command);
-        } else if (command.startsWith("year ")) {
+        } else if (command.matches("(^year$)|(^year\\s+.*$)")) {
             year(command);
-        } else if (command.startsWith("load ")) {
+        } else if (command.matches("(^load$)|(^load\\s+.*$)")) {
             load(command);
-        } else if (command.startsWith("fload ")) {
+        } else if (command.matches("(^fload$)|(^fload\\s+.*$)")) {
             fload(command);
-        } else if (command.startsWith("list ")) {
+        } else if (command.matches("(^list$)|(^list\\s+.*$)")) {
             list(command);
-        } else if (command.startsWith("clear ")) {
+        } else if (command.matches("(^clear$)|(^clear\\s+.*$)")) {
             clear(command);
-        } else if (command.startsWith("get ")) {
+        } else if (command.matches("(^get$)|(^get\\s+.*$)")) {
             get(command);
-        } else if (command.startsWith("add ")) {
+        } else if (command.matches("(^add$)|(^add\\s+.*$)")) {
             add(command);
-        } else if (command.startsWith("addv ")) {
+        } else if (command.matches("(^addv$)|(^addv\\s+.*$)")) {
             addv(command);
-        } else if (command.startsWith("near ")) {
+        } else if (command.matches("(^near$)|(^near\\s+.*$)")) {
             near(command);
-        } else if (command.startsWith("sim ")) {
+        } else if (command.matches("(^sim$)|(^sim\\s+.*$)")) {
             sim(command);
-        } else if (command.startsWith("tir ")) {
-            tir(command);
-        } else if (command.startsWith("ftir ")) {
-            ftir(command);
-        } else if (command.startsWith("compare ")) {
+        } else if (command.matches("(^tri$)|(^tri\\s+.*$)")) {
+            tri(command);
+        } else if (command.matches("(^ftri$)|(^ftri\\s+.*$)")) {
+            ftri(command);
+        } else if (command.matches("(^compare$)|(^compare\\s+.*$)")) {
             compare(command);
-        } else if (command.startsWith("cset ")) {
+        } else if (command.matches("(^cset$)|(^cset\\s+.*$)")) {
             cset(command);
-        } else if (command.startsWith("rset ")) {
+        } else if (command.matches("(^rset$)|(^rset\\s+.*$)")) {
             rset(command);
-        } else if (command.startsWith("dset ")) {
+        } else if (command.matches("(^dset$)|(^dset\\s+.*$)")) {
             dset(command);
-        } else if (command.startsWith("aset ")) {
+        } else if (command.matches("(^aset$)|(^aset\\s+.*$)")) {
             aset(command);
-        } else if (command.startsWith("sset ")) {
+        } else if (command.matches("(^sset$)|(^sset\\s+.*$)")) {
             sset(command);
-        } else if (command.startsWith("pset ")) {
+        } else if (command.matches("(^pset$)|(^pset\\s+.*$)")) {
             pset(command);
-        } else if (command.startsWith("vset ")) {
+        } else if (command.matches("(^vset$)|(^vset\\s+.*$)")) {
             vset(command);
-        } else if (command.startsWith("count")) {
+        } else if (command.matches("(^count$)|(^count\\s+.*$)")) {
             count(command);
-        } else if (command.startsWith("sims ")) {
+        } else if (command.matches("(^sims$)|(^sims\\s+.*$)")) {
             sims(command);
         } else {
             throw new Exception("Unknown command: " + command);
@@ -326,18 +331,25 @@ public class Command {
         if (split.length == 2) {
             switch (split[1]) {
                 case "stores":
-                    Iterator<String> iterator1 = stores.keySet().iterator();
-                    while (iterator1.hasNext()) {
-                        TriShell.println(iterator1.next());
+                    Iterator<String> iterator = stores.keySet().iterator();
+                    while (iterator.hasNext()) {
+                        TriShell.println(iterator.next());
                     }
                     TriShell.println(stores.size() + " stores loaded.");
                     break;
                 case "vectors":
-                    Iterator<String> iterator2 = vectors.keySet().iterator();
+                    Iterator<String> iterator1 = vectors.keySet().iterator();
+                    while (iterator1.hasNext()) {
+                        TriShell.println(iterator1.next());
+                    }
+                    TriShell.println(vectors.size() + " vectors loaded.");
+                    break;
+                case "sets":
+                    Iterator<String> iterator2 = setmap.keySet().iterator();
                     while (iterator2.hasNext()) {
                         TriShell.println(iterator2.next());
                     }
-                    TriShell.println(vectors.size() + " vectors loaded.");
+                    TriShell.println(setmap.size() + " sets loaded.");
                     break;
                 default:
                     throw new Exception("clear syntax error");
@@ -506,6 +518,7 @@ public class Command {
 
     /**
      * Close all vector readers and clear stores
+     *
      * @throws Exception
      */
     public void close() throws Exception {
@@ -527,13 +540,14 @@ public class Command {
             Iterator<String> iterator = help.stringPropertyNames().iterator();
             while (iterator.hasNext()) {
                 String cmd = iterator.next();
-                TriShell.println(cmd+"\t"+help.getProperty(cmd));
+                TriShell.println(cmd + "\t" + help.getProperty(cmd));
             }
         }
     }
 
     /**
      * Print the command help on the shell
+     *
      * @param cmd The command
      */
     public void help(String cmd) {
@@ -593,7 +607,7 @@ public class Command {
         }
     }
 
-    private void tir(String cmd) throws Exception {
+    private void tri(String cmd) throws Exception {
         String[] split = cmd.split("\\s+");
         if (split.length > 3) {
             if (split[2].matches("[0-9]+") && split[3].matches("[0-9]+")) {
@@ -622,7 +636,7 @@ public class Command {
         }
     }
 
-    private void ftir(String cmd) throws Exception {
+    private void ftri(String cmd) throws Exception {
         String[] split = cmd.split("\\s+");
         if (split.length > 3) {
             if (split[2].matches("[0-9]+") && split[3].matches("[0-9]+")) {
@@ -827,7 +841,7 @@ public class Command {
             throw new Exception("set2vec syntax error");
         }
     }
-    
+
     private void sims(String cmd) throws Exception {
         String[] split = cmd.split("\\s+");
         if (split.length > 3) {

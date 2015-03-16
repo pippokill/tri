@@ -69,15 +69,15 @@ import org.apache.lucene.util.Version;
  * @author pierpaolo
  */
 public class BuildOccurrence {
-    
+
     private int winsize = 5;
-    
+
     private File outputDir = new File("./");
-    
+
     private static final Logger logger = Logger.getLogger(BuildOccurrence.class.getName());
-    
+
     private Extractor extractor;
-    
+
     private String filenameRegExp = "^.+$";
 
     /**
@@ -151,7 +151,7 @@ public class BuildOccurrence {
     public void setExtractor(Extractor extractor) {
         this.extractor = extractor;
     }
-    
+
     private Map<String, Multiset<String>> count(File startingDir, int year) throws IOException {
         Map<String, Multiset<String>> map = new HashMap<>();
         File[] listFiles = startingDir.listFiles();
@@ -178,7 +178,7 @@ public class BuildOccurrence {
         }
         return map;
     }
-    
+
     private List<String> getTokens(Reader reader) throws IOException {
         List<String> tokens = new ArrayList<>();
         Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_36);
@@ -244,7 +244,7 @@ public class BuildOccurrence {
             }
         }
     }
-    
+
     private void save(Map<String, Multiset<String>> count, int year) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(outputDir.getAbsolutePath() + "/count_" + year));
         Iterator<String> keys = count.keySet().iterator();
@@ -259,16 +259,16 @@ public class BuildOccurrence {
         }
         writer.close();
     }
-    
+
     static Options options;
-    
+
     static CommandLineParser cmdParser = new BasicParser();
-    
+
     static {
         options = new Options();
         options.addOption("c", true, "The corpus directory containing files with year metadata")
                 .addOption("o", true, "Output directory where output will be stored")
-                .addOption("w", true, "The window size used to compute the co-occurrences")
+                .addOption("w", true, "The window size used to compute the co-occurrences (optional, default 5)")
                 .addOption("e", true, "The class used to extract the content from files")
                 .addOption("r", true, "Regular expression used to fetch files (optional, default \".+\")");
     }
@@ -281,12 +281,12 @@ public class BuildOccurrence {
     public static void main(String[] args) {
         try {
             CommandLine cmd = cmdParser.parse(options, args);
-            if (cmd.hasOption("c") && cmd.hasOption("o") && cmd.hasOption("w") && cmd.hasOption("e")) {
+            if (cmd.hasOption("c") && cmd.hasOption("o") && cmd.hasOption("e")) {
                 try {
                     Extractor extractor = (Extractor) Class.forName("di.uniba.it.tri.extractor." + cmd.getOptionValue("e")).newInstance();
                     BuildOccurrence builder = new BuildOccurrence();
                     builder.setOutputDir(new File(cmd.getOptionValue("o")));
-                    builder.setWinsize(Integer.parseInt(cmd.getOptionValue("w")));
+                    builder.setWinsize(Integer.parseInt(cmd.getOptionValue("w", "5")));
                     builder.setExtractor(extractor);
                     builder.setFilenameRegExp(cmd.getOptionValue("r", "^.+$"));
                     builder.process(new File(cmd.getOptionValue("c")));
@@ -301,5 +301,5 @@ public class BuildOccurrence {
             logger.log(Level.SEVERE, null, ex);
         }
     }
-    
+
 }
