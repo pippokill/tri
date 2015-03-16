@@ -36,7 +36,7 @@ Build the WordSpaces:
 1.	Run the class **di.uniba.it.tri.space.SpaceBuilder** with the arguments: *outputOccDir* *outputSpaceDir* *dimension* *seed* *dictionarySize*. The *outputOccDir* is the directory of co-occurrences, *outputSpaceDir* is the directory in which WordSpaces will be stored, *dimension* and *seed* are Random Indexing parameters (1000 and 20 are good values), and the dictionarySize is the number of terms considered into the vocabulary (the most frequent terms are considered).
 
 
-After these steps the *outputSpaceDir* contains a WordSpace for each year in the corpus. Now you can use the TRI shell to analyze the corpus running the class: **di.uniba.it.tri.shell.TriShell**. If you note some problems related to characters encoding you can run the shell passing as argument the charset. The default charset is ISO-8859-1. Type **help** for shell usage, **help \*** to show the commands list and **help command>** to visualize info about a specific command.
+After these steps the *outputSpaceDir* contains a WordSpace for each year in the corpus. Now you can use the TRI shell to analyze the corpus running the class: **di.uniba.it.tri.shell.TriShell**. If you note some problems related to characters encoding you can run the shell passing as argument the charset. The default charset is ISO-8859-1. Type **help** for shell usage, **help *** to show the commands list and **help command** to visualize info about a specific command.
 
 Command line help
 -----------------
