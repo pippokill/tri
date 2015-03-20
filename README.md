@@ -21,6 +21,14 @@ Details about the algorithm are published in the following paper:
 
 Please, cite the paper if you adopt our tool.
 
+Setup
+-----
+
+1.  Install Java JDK 1.7, Maven, Git.
+2.  Clone the project using Git.
+3.  Compile the project using the command: *mvn package*.
+4.  Execute the bash script run.sh followed by the class name and arguments (see Command Line Guideline for more details).
+
 Usage
 -----
 
