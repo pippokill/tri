@@ -51,8 +51,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
@@ -75,7 +76,7 @@ public class Command {
     //public static int MAX_NEAR_VECTORS = 25;
     private static final String ELEMENTAL_NAME = "*elemental*";
 
-    private static final QueryParser parser = new QueryParser(Version.LUCENE_36, "word", new StandardAnalyzer(Version.LUCENE_36));
+    private static final QueryParser parser = new QueryParser("word", new StandardAnalyzer(CharArraySet.EMPTY_SET));
 
     private final Map<String, VectorReader> stores = new HashMap<>();
 

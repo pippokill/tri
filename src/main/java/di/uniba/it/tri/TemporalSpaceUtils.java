@@ -57,8 +57,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.PriorityQueue;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -310,16 +313,16 @@ public class TemporalSpaceUtils {
     public static IndexReader index(VectorReader vreader) throws IOException {
         Iterator<String> keys = vreader.getKeys();
         RAMDirectory ramDir = new RAMDirectory();
-        IndexWriterConfig iwconfig = new IndexWriterConfig(Version.LUCENE_36, new StandardAnalyzer(Version.LUCENE_36));
+        IndexWriterConfig iwconfig = new IndexWriterConfig(Version.LATEST, new StandardAnalyzer(CharArraySet.EMPTY_SET));
         IndexWriter writer = new IndexWriter(ramDir, iwconfig);
         while (keys.hasNext()) {
             String word = keys.next();
             Document doc = new Document();
-            doc.add(new Field("word", word, Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.NO));
+            doc.add(new StringField("word", word, Field.Store.YES));
             writer.addDocument(doc);
         }
         writer.close();
-        return IndexReader.open(ramDir);
+        return DirectoryReader.open(ramDir);
     }
 
     /**

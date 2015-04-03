@@ -62,6 +62,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
 
 /**
@@ -181,7 +182,7 @@ public class BuildOccurrence {
 
     private List<String> getTokens(Reader reader) throws IOException {
         List<String> tokens = new ArrayList<>();
-        Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_36);
+        Analyzer analyzer = new StandardAnalyzer(CharArraySet.EMPTY_SET);
         TokenStream tokenStream = analyzer.tokenStream("text", reader);
         tokenStream.reset();
         CharTermAttribute cattr = tokenStream.addAttribute(CharTermAttribute.class);
