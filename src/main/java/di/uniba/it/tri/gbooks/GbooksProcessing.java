@@ -1,25 +1,63 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Copyright (c) 2014, the Temporal Random Indexing AUTHORS.
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ *
+ * Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * Neither the name of the University of Bari nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ * GNU GENERAL PUBLIC LICENSE - Version 3, 29 June 2007
+ *
  */
 package di.uniba.it.tri.gbooks;
 
 import di.uniba.it.tri.data.DictionaryEntry;
+import di.uniba.it.tri.data.h2.H2Storage;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+import org.apache.commons.cli.BasicParser;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.HTreeMap;
@@ -34,27 +72,38 @@ public class GbooksProcessing {
 
     private int cacheSize = 100000;
 
+    private int h2CacheSize = 1024 * 512;
+
     int minYear = Integer.MAX_VALUE;
 
     int maxYear = -Integer.MAX_VALUE;
-
-    int dimension = 1000;
-
-    int seed = 10;
 
     private String wordRegexpFilter = "[a-z]+";
 
     private DB db;
 
+    private H2Storage h2s;
+
+    private final String dirname;
+
     private static final Logger LOG = Logger.getLogger(GbooksProcessing.class.getName());
 
-    public GbooksProcessing(int dimension, int seed) {
-        this.dimension = dimension;
-        this.seed = seed;
+    private static final int MAX_LENGTH_WORD = 128;
+
+    public GbooksProcessing(String dirname) {
+        this.dirname = dirname;
     }
 
-    public void init(File dbfile) {
-        db = DBMaker.newFileDB(dbfile).cacheSize(cacheSize).mmapFileEnableIfSupported().transactionDisable().closeOnJvmShutdown().make();
+    public void init() {
+        try {
+            File dbfile = new File(dirname + "/dbmap/");
+            dbfile.mkdir();
+            dbfile = new File(dirname + "/dbmap/gbmap");
+            db = DBMaker.newFileDB(dbfile).cacheSize(cacheSize).mmapFileEnableIfSupported().transactionDisable().closeOnJvmShutdown().make();
+            h2s = new H2Storage(dirname + "/h2/gb.db", h2CacheSize);
+        } catch (IOException | SQLException ex) {
+            LOG.log(Level.SEVERE, "Error to init Gbooks processing", ex);
+        }
     }
 
     private GBLineResult processLine(String line) {
@@ -77,13 +126,16 @@ public class GbooksProcessing {
 
     private List<DictionaryEntry> count(File dir) throws IOException {
         LOG.info("Start counting...");
-        HTreeMap<String, Integer> counterMap = db.createHashMap("lex").make();
+        HTreeMap<String, Integer> counterMap = db.createHashMap("dict").make();
         minYear = Integer.MAX_VALUE;
         maxYear = -Integer.MAX_VALUE;
         long c = 0;
+        GZIPOutputStream gzout = new GZIPOutputStream(new FileOutputStream(dirname + "googlebooks-valid.gz"));
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(gzout));
         File[] listFiles = dir.listFiles();
         for (File file : listFiles) {
             if (file.getName().startsWith("googlebooks-") && file.getName().endsWith(".gz")) {
+                LOG.log(Level.INFO, "Count file {0}", file.getAbsolutePath());
                 GZIPInputStream is = new GZIPInputStream(new FileInputStream(file));
                 BufferedReader reader = new BufferedReader(new InputStreamReader(is));
                 while (reader.ready()) {
@@ -97,24 +149,31 @@ public class GbooksProcessing {
                     if (gbres != null) {
                         minYear = Math.min(minYear, gbres.getYear());
                         maxYear = Math.max(maxYear, gbres.getYear());
-                        for (String ngram : gbres.getNgram()) {
-                            if (ngram.matches(wordRegexpFilter)) {
-                                Integer count = counterMap.get(ngram);
+                        for (int i = 0; i < gbres.getNgram().length; i++) {
+                            if (gbres.getNgram()[i].matches(wordRegexpFilter) && gbres.getNgram()[i].length() < MAX_LENGTH_WORD) {
+                                Integer count = counterMap.get(gbres.getNgram()[i]);
                                 if (count == null) {
-                                    counterMap.put(ngram, gbres.getCount());
+                                    counterMap.put(gbres.getNgram()[i], gbres.getCount());
                                 } else {
-                                    counterMap.put(ngram, count + gbres.getCount());
+                                    counterMap.put(gbres.getNgram()[i], count + gbres.getCount());
+                                }
+                            }
+                            for (int j = 0; j < gbres.getNgram().length; j++) {
+                                if (i != j) {
+                                    writer.append(gbres.getNgram()[i]).append("\t").append(gbres.getNgram()[j]).append("\t")
+                                            .append(String.valueOf(gbres.getYear())).append("\t").append(String.valueOf(gbres.getCount()));
+                                    writer.newLine();
                                 }
                             }
                         }
                     }
                     c++;
-                    if (c % 1000000 == 0) {
-                        LOG.log(Level.INFO, "count {0}", c);
-                    }
                 }
+                LOG.log(Level.INFO, "Close file {0} ({1})", new Object[]{file.getAbsolutePath(), c});
+                reader.close();
             }
         }
+        writer.close();
         LOG.log(Level.INFO, "Min year: {0}", minYear);
         LOG.log(Level.INFO, "Max year: {0}", maxYear);
         LOG.log(Level.INFO, "Build dictionary ({0})...", counterMap.size());
@@ -126,7 +185,7 @@ public class GbooksProcessing {
         }
         LOG.info("Sorting dictionary...");
         Collections.sort(dict);
-        db.delete("lex");
+        db.delete("dict");
         db.commit();
         db.compact();
         LOG.info("Return dictionary...");
@@ -137,101 +196,87 @@ public class GbooksProcessing {
         }
     }
 
-    private short[] getRandomVector(int dimension, int seed, Random random) {
-        short[] v = new short[seed];
-        boolean[] occupiedPositions = new boolean[dimension];
-        int testPlace, entryCount = 0;
+    private void store(List<DictionaryEntry> dict) throws IOException, SQLException {
+        LOG.info("Store lex...");
+        HTreeMap<String, Integer> lex = db.createHashMap("lex").make();
+        int lid = 0;
+        for (DictionaryEntry dictEntry : dict) {
+            h2s.addLex(lid, dictEntry.getWord(), dictEntry.getCounter());
+            lex.put(dictEntry.getWord(), lid);
+            lid++;
 
-        // Put in +1 entries.
-        while (entryCount < seed / 2) {
-            testPlace = random.nextInt(dimension);
-            if (!occupiedPositions[testPlace]) {
-                occupiedPositions[testPlace] = true;
-                v[entryCount]
-                        = new Integer(testPlace + 1).shortValue();
-                entryCount++;
-            }
-        }
-
-        // Put in -1 entries.
-        while (entryCount < seed) {
-            testPlace = random.nextInt(dimension);
-            if (!occupiedPositions[testPlace]) {
-                occupiedPositions[testPlace] = true;
-                v[entryCount]
-                        = new Integer((1 + testPlace) * -1).shortValue();
-                entryCount++;
-            }
-        }
-        return v;
-    }
-
-    private void buildSpaces(File dir, List<DictionaryEntry> dict) throws IOException {
-        LOG.info("Start spaces building...");
-        Map<String, short[]> elementalSpace = new HashMap<>();
-        //create random vectors space
-        LOG.info("Building elemental vectors...");
-        Random random = new Random();
-        for (DictionaryEntry entry : dict) {
-            elementalSpace.put(entry.getWord(), getRandomVector(dimension, seed, random));
         }
         dict.clear();
         dict = null;
         System.gc();
+        LOG.info("Store occ...");
         long c = 0;
-        File[] listFiles = dir.listFiles();
-        for (File file : listFiles) {
-            if (file.getName().startsWith("googlebooks-") && file.getName().endsWith(".gz")) {
-                GZIPInputStream is = new GZIPInputStream(new FileInputStream(file));
-                BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-                while (reader.ready()) {
-                    String line = reader.readLine();
-                    GBLineResult gbres = null;
-                    try {
-                        gbres = processLine(line);
-                    } catch (Exception ex) {
-                        System.err.println("Line error: " + line);
-                    }
-                    if (gbres != null) {
-                        HTreeMap<String, float[]> svMap = db.createHashMap("SV_" + gbres.getYear()).makeOrGet();
-                        for (int i = 0; i < gbres.getNgram().length; i++) {
-                            if (elementalSpace.containsKey(gbres.getNgram()[i])) {
-                                float[] sv = svMap.get(gbres.getNgram()[i]);
-                                if (sv == null) {
-                                    sv = new float[dimension];
-                                    svMap.put(gbres.getNgram()[i], sv);
-                                }
-                                for (int j = 0; j < gbres.getNgram().length; j++) {
-                                    if (i != j) {
-                                        short[] idx = elementalSpace.get(gbres.getNgram()[j]);
-                                        if (idx != null) {
-                                            for (int k = 0; k < idx.length; k++) {
-                                                if (idx[k] > 0) {
-                                                    sv[idx[k] - 1]++;
-                                                } else {
-                                                    sv[-idx[k] - 1]--;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    c++;
-                    if (c % 1000000 == 0) {
-                        LOG.log(Level.INFO, "count {0}", c);
-                    }
-                }
-                db.commit();
+        GZIPInputStream is = new GZIPInputStream(new FileInputStream(dirname + "googlebooks-valid.gz"));
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        while (reader.ready()) {
+            String line = reader.readLine();
+            String[] split = line.split("\t");
+            Integer lid1 = lex.get(split[0]);
+            Integer lid2 = lex.get(split[1]);
+            if (lid1 != null && lid2 != null) {
+                h2s.addOcc(lid1, lid2, Integer.parseInt(split[2]), Integer.parseInt(split[3]));
+            }
+            c++;
+            if (c % 10000000 == 0) {
+                LOG.log(Level.INFO, "count {0}", c);
             }
         }
+        reader.close();
+        db.commit();
         db.close();
+        h2s.commit();
+        h2s.close();
     }
 
-    public void process(File startingDir) throws IOException {
-        List<DictionaryEntry> count = count(startingDir);
-        buildSpaces(startingDir, count);
+    public void process(File startingDir) throws IOException, SQLException {
+        List<DictionaryEntry> dict = count(startingDir);
+        store(dict);
+    }
+
+    static Options options;
+
+    static CommandLineParser cmdParser = new BasicParser();
+
+    static {
+        options = new Options();
+        options.addOption("i", true, "The corpus directory containing Google Books 2-grams dataset")
+                .addOption("t", true, "Output directory where processed data will be stored")
+                .addOption("c", true, "The cache size used by MapDB in elements (optional, default 100000)")
+                .addOption("h", true, "The cache size used by H2 storage in Kbyte (optional, default 32MB)")
+                .addOption("v", true, "The vocabulary size (optional, default 50000")
+                .addOption("r", true, "Regular expression used to filter token (optional, default [a-z]+");
+    }
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String[] args) {
+        try {
+            CommandLine cmd = cmdParser.parse(options, args);
+            if (cmd.hasOption("i") && cmd.hasOption("t")) {
+                try {
+                    GbooksProcessing gbp = new GbooksProcessing(cmd.getOptionValue("t"));
+                    gbp.setCacheSize(Integer.parseInt(cmd.getOptionValue("c", "100000")));
+                    gbp.setH2CacheSize(Integer.parseInt(cmd.getOptionValue("h", "32768")));
+                    gbp.setVocSize(Integer.parseInt(cmd.getOptionValue("v", "50000")));
+                    gbp.setWordRegexpFilter(cmd.getOptionValue("r", "[a-z]+"));
+                    gbp.init();
+                    gbp.process(new File(cmd.getOptionValue("i")));
+                } catch (IOException | SQLException ex) {
+                    LOG.log(Level.SEVERE, null, ex);
+                }
+            } else {
+                HelpFormatter helpFormatter = new HelpFormatter();
+                helpFormatter.printHelp("Process Google Books 2-grams dataset", options, true);
+            }
+        } catch (ParseException ex) {
+            LOG.log(Level.SEVERE, null, ex);
+        }
     }
 
     public int getVocSize() {
@@ -256,6 +301,14 @@ public class GbooksProcessing {
 
     public void setWordRegexpFilter(String wordRegexpFilter) {
         this.wordRegexpFilter = wordRegexpFilter;
+    }
+
+    public int getH2CacheSize() {
+        return h2CacheSize;
+    }
+
+    public void setH2CacheSize(int h2CacheSize) {
+        this.h2CacheSize = h2CacheSize;
     }
 
     private class GBLineResult {
