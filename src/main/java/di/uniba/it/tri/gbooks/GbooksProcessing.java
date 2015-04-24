@@ -41,6 +41,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -72,7 +73,7 @@ public class GbooksProcessing {
 
     private int cacheSize = 100000;
 
-    private int h2CacheSize = 1024 * 512;
+    private int h2CacheSize = 1024 * 32;
 
     int minYear = Integer.MAX_VALUE;
 
@@ -130,7 +131,7 @@ public class GbooksProcessing {
         minYear = Integer.MAX_VALUE;
         maxYear = -Integer.MAX_VALUE;
         long c = 0;
-        GZIPOutputStream gzout = new GZIPOutputStream(new FileOutputStream(dirname + "googlebooks-valid.gz"));
+        GZIPOutputStream gzout = new GZIPOutputStream(new FileOutputStream(dirname + "/googlebooks-valid.gz"));
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(gzout));
         File[] listFiles = dir.listFiles();
         for (File file : listFiles) {
@@ -198,20 +199,23 @@ public class GbooksProcessing {
 
     private void store(List<DictionaryEntry> dict) throws IOException, SQLException {
         LOG.info("Store lex...");
+        BufferedWriter writer=new BufferedWriter(new FileWriter(dirname + "/googlebooks-valid.dict"));
         HTreeMap<String, Integer> lex = db.createHashMap("lex").make();
         int lid = 0;
         for (DictionaryEntry dictEntry : dict) {
             h2s.addLex(lid, dictEntry.getWord(), dictEntry.getCounter());
             lex.put(dictEntry.getWord(), lid);
             lid++;
-
+            writer.append(dictEntry.getWord()).append("\t").append(String.valueOf(dictEntry.getCounter()));
+            writer.newLine();
         }
+        writer.close();
         dict.clear();
         dict = null;
         System.gc();
         LOG.info("Store occ...");
         long c = 0;
-        GZIPInputStream is = new GZIPInputStream(new FileInputStream(dirname + "googlebooks-valid.gz"));
+        GZIPInputStream is = new GZIPInputStream(new FileInputStream(dirname + "/googlebooks-valid.gz"));
         BufferedReader reader = new BufferedReader(new InputStreamReader(is));
         while (reader.ready()) {
             String line = reader.readLine();
@@ -224,6 +228,7 @@ public class GbooksProcessing {
             c++;
             if (c % 10000000 == 0) {
                 LOG.log(Level.INFO, "count {0}", c);
+                h2s.commit();
             }
         }
         reader.close();
@@ -247,7 +252,7 @@ public class GbooksProcessing {
         options.addOption("i", true, "The corpus directory containing Google Books 2-grams dataset")
                 .addOption("t", true, "Output directory where processed data will be stored")
                 .addOption("c", true, "The cache size used by MapDB in elements (optional, default 100000)")
-                .addOption("h", true, "The cache size used by H2 storage in Kbyte (optional, default 32MB)")
+                .addOption("h", true, "The cache size used by H2 storage in Kbyte (optional, default 512MB)")
                 .addOption("v", true, "The vocabulary size (optional, default 50000")
                 .addOption("r", true, "Regular expression used to filter token (optional, default [a-z]+");
     }
