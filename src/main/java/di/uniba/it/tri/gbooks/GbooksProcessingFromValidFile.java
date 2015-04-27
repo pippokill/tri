@@ -39,6 +39,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -64,30 +65,30 @@ import org.mapdb.HTreeMap;
  * @author pierpaolo
  */
 public class GbooksProcessingFromValidFile {
-
+    
     private int vocSize = 100000;
-
+    
     private int cacheSize = 1000000;
-
+    
     int minYear = Integer.MAX_VALUE;
-
+    
     int maxYear = -Integer.MAX_VALUE;
-
+    
     private String wordRegexpFilter = "[a-z]+";
-
+    
     private final File validGbookFile;
-
+    
     private DB db;
-
+    
     private final String dirname;
-
+    
     private static final Logger LOG = Logger.getLogger(GbooksProcessingFromValidFile.class.getName());
-
+    
     public GbooksProcessingFromValidFile(String dirname, File validGbookFile) {
         this.dirname = dirname;
         this.validGbookFile = validGbookFile;
     }
-
+    
     public void init() {
         try {
             File dbfile = new File(dirname + "/dbmap/");
@@ -98,9 +99,24 @@ public class GbooksProcessingFromValidFile {
             LOG.log(Level.SEVERE, "Error to init Gbooks processing", ex);
         }
     }
-
+    
     private List<DictionaryEntry> count() throws IOException {
         LOG.info("Start counting...");
+        File dictFile = new File(dirname + "/googlebooks-valid.dict");
+        if (dictFile.exists()) {
+            LOG.info("Previous dict file found, loading...");
+            List<DictionaryEntry> dict = new ArrayList<>();
+            BufferedReader dictReader = new BufferedReader(new FileReader(dictFile));
+            while (dictReader.ready()) {
+                String[] split = dictReader.readLine().split("\t");
+                if (split.length == 2) {
+                    dict.add(new DictionaryEntry(split[0], Integer.parseInt(split[1])));
+                }
+            }
+            dictReader.close();
+            LOG.log(Level.INFO, "Loaded {0} dict entries", dict.size());
+            return dict;
+        }
         HTreeMap<String, Integer> counterMap = db.createHashMap("dict").make();
         minYear = Integer.MAX_VALUE;
         maxYear = -Integer.MAX_VALUE;
@@ -154,7 +170,7 @@ public class GbooksProcessingFromValidFile {
             return dict;
         }
     }
-
+    
     private CountEntry find(List<CountEntry> list, int wordid, int year) {
         for (CountEntry entry : list) {
             if (entry.getWordId() == wordid && entry.getYear() == year) {
@@ -163,10 +179,15 @@ public class GbooksProcessingFromValidFile {
         }
         return null;
     }
-
+    
     private void store(List<DictionaryEntry> dict) throws IOException, SQLException {
         LOG.info("Store lex...");
         BufferedWriter writer = new BufferedWriter(new FileWriter(dirname + "/googlebooks-valid.dict"));
+        //clean previous map
+        db.delete("lex");
+        db.delete("counting");
+        db.commit();
+        db.compact();
         HTreeMap<String, Integer> lex = db.createHashMap("lex").make();
         HTreeMap<Integer, List<CountEntry>> counting = db.createHashMap("counting").make();
         int lid = 0;
@@ -182,7 +203,7 @@ public class GbooksProcessingFromValidFile {
         System.gc();
         LOG.info("Store occ...");
         long c = 0;
-        GZIPInputStream is = new GZIPInputStream(new FileInputStream(dirname + "/googlebooks-valid.gz"));
+        GZIPInputStream is = new GZIPInputStream(new FileInputStream(validGbookFile));
         BufferedReader reader = new BufferedReader(new InputStreamReader(is));
         while (reader.ready()) {
             String line = reader.readLine();
@@ -213,16 +234,16 @@ public class GbooksProcessingFromValidFile {
         db.commit();
         db.close();
     }
-
+    
     public void process() throws IOException, SQLException {
         List<DictionaryEntry> dict = count();
         store(dict);
     }
-
+    
     static Options options;
-
+    
     static CommandLineParser cmdParser = new BasicParser();
-
+    
     static {
         options = new Options();
         options.addOption("i", true, "The valid Google Books 2-grams file")
@@ -258,29 +279,29 @@ public class GbooksProcessingFromValidFile {
             LOG.log(Level.SEVERE, null, ex);
         }
     }
-
+    
     public int getVocSize() {
         return vocSize;
     }
-
+    
     public void setVocSize(int vocSize) {
         this.vocSize = vocSize;
     }
-
+    
     public int getCacheSize() {
         return cacheSize;
     }
-
+    
     public String getWordRegexpFilter() {
         return wordRegexpFilter;
     }
-
+    
     public void setCacheSize(int cacheSize) {
         this.cacheSize = cacheSize;
     }
-
+    
     public void setWordRegexpFilter(String wordRegexpFilter) {
         this.wordRegexpFilter = wordRegexpFilter;
     }
-
+    
 }
