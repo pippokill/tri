@@ -5,11 +5,13 @@
  */
 package di.uniba.it.tri.gbooks;
 
+import java.io.Serializable;
+
 /**
  *
  * @author pierpaolo
  */
-public class CountEntry {
+public class CountEntry implements Serializable {
 
     private int wordId;
 

@@ -65,30 +65,30 @@ import org.mapdb.HTreeMap;
  * @author pierpaolo
  */
 public class GbooksProcessingFromValidFile {
-    
+
     private int vocSize = 100000;
-    
+
     private int cacheSize = 1000000;
-    
+
     int minYear = Integer.MAX_VALUE;
-    
+
     int maxYear = -Integer.MAX_VALUE;
-    
+
     private String wordRegexpFilter = "[a-z]+";
-    
+
     private final File validGbookFile;
-    
+
     private DB db;
-    
+
     private final String dirname;
-    
+
     private static final Logger LOG = Logger.getLogger(GbooksProcessingFromValidFile.class.getName());
-    
+
     public GbooksProcessingFromValidFile(String dirname, File validGbookFile) {
         this.dirname = dirname;
         this.validGbookFile = validGbookFile;
     }
-    
+
     public void init() {
         try {
             File dbfile = new File(dirname + "/dbmap/");
@@ -99,7 +99,7 @@ public class GbooksProcessingFromValidFile {
             LOG.log(Level.SEVERE, "Error to init Gbooks processing", ex);
         }
     }
-    
+
     private List<DictionaryEntry> count() throws IOException {
         LOG.info("Start counting...");
         File dictFile = new File(dirname + "/googlebooks-valid.dict");
@@ -170,7 +170,7 @@ public class GbooksProcessingFromValidFile {
             return dict;
         }
     }
-    
+
     private CountEntry find(List<CountEntry> list, int wordid, int year) {
         for (CountEntry entry : list) {
             if (entry.getWordId() == wordid && entry.getYear() == year) {
@@ -179,7 +179,7 @@ public class GbooksProcessingFromValidFile {
         }
         return null;
     }
-    
+
     private void store(List<DictionaryEntry> dict) throws IOException, SQLException {
         LOG.info("Store lex...");
         BufferedWriter writer = new BufferedWriter(new FileWriter(dirname + "/googlebooks-valid.dict"));
@@ -217,12 +217,7 @@ public class GbooksProcessingFromValidFile {
                     list = new ArrayList<>();
                     counting.put(lid1, list);
                 }
-                CountEntry find = find(list, lid2, year);
-                if (find == null) {
-                    list.add(new CountEntry(lid2, year, Integer.parseInt(split[3])));
-                } else {
-                    find.setCount(find.getCount() + Integer.parseInt(split[3]));
-                }
+                list.add(new CountEntry(lid2, year, Integer.parseInt(split[3])));
             }
             c++;
             if (c % 10000000 == 0) {
@@ -234,16 +229,16 @@ public class GbooksProcessingFromValidFile {
         db.commit();
         db.close();
     }
-    
+
     public void process() throws IOException, SQLException {
         List<DictionaryEntry> dict = count();
         store(dict);
     }
-    
+
     static Options options;
-    
+
     static CommandLineParser cmdParser = new BasicParser();
-    
+
     static {
         options = new Options();
         options.addOption("i", true, "The valid Google Books 2-grams file")
@@ -279,29 +274,29 @@ public class GbooksProcessingFromValidFile {
             LOG.log(Level.SEVERE, null, ex);
         }
     }
-    
+
     public int getVocSize() {
         return vocSize;
     }
-    
+
     public void setVocSize(int vocSize) {
         this.vocSize = vocSize;
     }
-    
+
     public int getCacheSize() {
         return cacheSize;
     }
-    
+
     public String getWordRegexpFilter() {
         return wordRegexpFilter;
     }
-    
+
     public void setCacheSize(int cacheSize) {
         this.cacheSize = cacheSize;
     }
-    
+
     public void setWordRegexpFilter(String wordRegexpFilter) {
         this.wordRegexpFilter = wordRegexpFilter;
     }
-    
+
 }
