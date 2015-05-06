@@ -16,8 +16,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
@@ -30,6 +30,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
+import org.mapdb.Fun;
 import org.mapdb.HTreeMap;
 
 /**
@@ -50,7 +51,7 @@ public class GbooksTRI {
 
     private int dimension = 5000;
 
-    private int seed = 4;
+    private int seed = 10;
 
     private String getKeySpan(int year) {
         if (year >= startYear && year <= endYear) {
@@ -77,36 +78,39 @@ public class GbooksTRI {
         //load DB
         File dbfile = new File(storageDirname + "/dbmap/gbmap");
         DB db = DBMaker.newFileDB(dbfile).cacheSize(cacheSize).mmapFileEnableIfSupported().transactionDisable().closeOnJvmShutdown().make();
-        //lexicon
-        HTreeMap<String, Integer> lex = db.get("lex");
+        //dictionary
+        HTreeMap<String, Integer> dict = db.get("dict");
         //co-occur info
-        HTreeMap<Integer, List<CountEntry>> counting = db.get("counting");
+        NavigableSet<Fun.Tuple2<Integer, CountEntry>> occSet = db.get("occ");
         //build random vector using word id
         Map<Integer, Vector> ri = new HashMap<>();
         Random random = new Random();
-        Iterator<Integer> idIt = lex.values().iterator();
+        Iterator<Integer> idIt = dict.values().iterator();
         while (idIt.hasNext()) {
             ri.put(idIt.next(), VectorFactory.generateRandomVector(VectorType.REAL, dimension, seed, random));
         }
-        LOG.log(Level.INFO, "Total words: {0}", lex.size());
+        LOG.log(Level.INFO, "Total words: {0}", dict.size());
         int cw = 0;
         System.out.println();
         //build semantic vector
-        Iterator<String> keyIt = lex.keySet().iterator();
+        Iterator<String> keyIt = dict.keySet().iterator();
         while (keyIt.hasNext()) {
             Map<String, Vector> tempSV = new HashMap<>();
             String currentKey = keyIt.next();
-            List<CountEntry> currentList = counting.get(lex.get(currentKey));
-            for (CountEntry entry : currentList) {
-                String keySpan = getKeySpan(entry.getYear());
-                Vector v = tempSV.get(keySpan);
-                if (v == null) {
-                    v = VectorFactory.createZeroVector(VectorType.REAL, dimension);
-                    tempSV.put(keySpan, v);
-                }
-                Vector riv = ri.get(entry.getWordId());
-                if (riv != null) {
-                    v.superpose(riv, entry.getCount(), null);
+            Integer wordId = dict.get(currentKey);
+            Iterable<CountEntry> occit = Fun.filter(occSet, wordId);
+            for (CountEntry entry : occit) {
+                if (entry.getYear() >= startYear && entry.getYear() <= endYear) {
+                    String keySpan = getKeySpan(entry.getYear());
+                    Vector v = tempSV.get(keySpan);
+                    if (v == null) {
+                        v = VectorFactory.createZeroVector(VectorType.REAL, dimension);
+                        tempSV.put(keySpan, v);
+                    }
+                    Vector riv = ri.get(entry.getWordId());
+                    if (riv != null) {
+                        v.superpose(riv, entry.getCount(), null);
+                    }
                 }
             }
             Set<String> spankeySet = tempSV.keySet();

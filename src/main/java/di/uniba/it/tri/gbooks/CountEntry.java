@@ -11,7 +11,7 @@ import java.io.Serializable;
  *
  * @author pierpaolo
  */
-public class CountEntry implements Serializable {
+public class CountEntry implements Serializable, Comparable<CountEntry> {
 
     private int wordId;
 
@@ -24,6 +24,11 @@ public class CountEntry implements Serializable {
         this.year = year;
         this.count = count;
     }
+
+    public CountEntry() {
+    }
+    
+    
 
     @Override
     public int hashCode() {
@@ -78,6 +83,11 @@ public class CountEntry implements Serializable {
     @Override
     public String toString() {
         return "CountEntry{" + "wordId=" + wordId + ", year=" + year + ", count=" + count + '}';
+    }
+
+    @Override
+    public int compareTo(CountEntry o) {
+        return Integer.compare(this.year, o.getYear());
     }
 
 }
