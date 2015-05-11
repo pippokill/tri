@@ -67,6 +67,7 @@ import org.mapdb.HTreeMap;
  *
  * @author pierpaolo
  */
+@Deprecated
 public class GbooksProcessing {
 
     private int vocSize = 100000;

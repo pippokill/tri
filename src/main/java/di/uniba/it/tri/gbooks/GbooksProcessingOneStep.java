@@ -40,8 +40,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.NavigableSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -79,6 +77,8 @@ public class GbooksProcessingOneStep {
     private static final int MAX_LENGTH_WORD = 128;
 
     private static final int FILE_LIMIT = Integer.MAX_VALUE;
+
+    private static final long MAX_FILE_SIZE = Long.MAX_VALUE;
 
     public GbooksProcessingOneStep(String dirname) {
         this.dirname = dirname;
@@ -120,7 +120,7 @@ public class GbooksProcessingOneStep {
         int fileCount = 0;
         File[] listFiles = dir.listFiles();
         for (int k = 0; k < listFiles.length && fileCount < FILE_LIMIT; k++) {
-            if (listFiles[k].getName().startsWith("googlebooks-") && listFiles[k].getName().endsWith(".gz") && listFiles[k].length() < (1024 * 1024 * 250)) {
+            if (listFiles[k].getName().startsWith("googlebooks-") && listFiles[k].getName().endsWith(".gz") && listFiles[k].length() < MAX_FILE_SIZE) {
                 LOG.log(Level.INFO, "Working on file {0}", listFiles[k].getAbsolutePath());
                 GZIPInputStream is = new GZIPInputStream(new FileInputStream(listFiles[k]));
                 BufferedReader reader = new BufferedReader(new InputStreamReader(is));
