@@ -56,7 +56,7 @@ public class GbooksTRI {
     private String getKeySpan(int year) {
         if (year >= startYear && year <= endYear) {
             int ni = (year - startYear) / step;
-            return (ni * step + startYear) + "_" + (ni * (step + 1) + startYear - 1);
+            return (ni * step + startYear) + "_" + ((ni + 1) * step + startYear - 1);
         } else {
             return null;
         }
@@ -83,16 +83,26 @@ public class GbooksTRI {
         //co-occur info
         NavigableSet<Fun.Tuple2<Integer, CountEntry>> occSet = db.get("occ");
         //build random vector using word id
+        //LOG.log(Level.INFO, "Build Random Vectors...");
         Map<Integer, Vector> ri = new HashMap<>();
         Random random = new Random();
-        Iterator<Integer> idIt = dict.values().iterator();
-        while (idIt.hasNext()) {
-            ri.put(idIt.next(), VectorFactory.generateRandomVector(VectorType.REAL, dimension, seed, random));
-        }
-        LOG.log(Level.INFO, "Total words: {0}", dict.size());
+        /*int cw = 0;
+         Iterator<Integer> idIt = dict.values().iterator();
+         while (idIt.hasNext()) {
+         ri.put(idIt.next(), VectorFactory.generateRandomVector(VectorType.REAL, dimension, seed, random));
+         cw++;
+         if (cw % 100 == 0) {
+         System.out.print(".");
+         if (cw % 10000 == 0) {
+         System.out.println("." + cw);
+         }
+         }
+         }
+         LOG.log(Level.INFO, "Total words: {0}", dict.size());*/
         int cw = 0;
         System.out.println();
         //build semantic vector
+        LOG.log(Level.INFO, "Build Semantic Vectors...");
         Iterator<String> keyIt = dict.keySet().iterator();
         while (keyIt.hasNext()) {
             Map<String, Vector> tempSV = new HashMap<>();
@@ -108,9 +118,11 @@ public class GbooksTRI {
                         tempSV.put(keySpan, v);
                     }
                     Vector riv = ri.get(entry.getWordId());
-                    if (riv != null) {
-                        v.superpose(riv, entry.getCount(), null);
+                    if (riv == null) {
+                        riv = VectorFactory.generateRandomVector(VectorType.REAL, dimension, seed, random);
+                        ri.put(entry.getWordId(), riv);
                     }
+                    v.superpose(riv, entry.getCount(), null);
                 }
             }
             Set<String> spankeySet = tempSV.keySet();
