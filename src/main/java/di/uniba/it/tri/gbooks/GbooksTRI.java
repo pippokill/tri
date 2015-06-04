@@ -49,7 +49,7 @@ public class GbooksTRI {
 
     private int cacheSize = 10000;
 
-    private int dimension = 5000;
+    private int dimension = 1000;
 
     private int seed = 10;
 
@@ -191,8 +191,8 @@ public class GbooksTRI {
                 .addOption("e", true, "End (year)")
                 .addOption("p", true, "Temporal step (optional, default 10)")
                 .addOption("h", true, "The cache size (optional, default 10000 elements)")
-                .addOption("s", true, "Seed (optional, default 4)")
-                .addOption("d", true, "Vector dimensions (optional, default 5000)");
+                .addOption("s", true, "Seed (optional, default 10)")
+                .addOption("d", true, "Vector dimensions (optional, default 1000)");
     }
 
     /**
@@ -205,8 +205,8 @@ public class GbooksTRI {
                 GbooksTRI gtri = new GbooksTRI();
                 gtri.setStartYear(Integer.parseInt(cmd.getOptionValue("b")));
                 gtri.setEndYear(Integer.parseInt(cmd.getOptionValue("e")));
-                gtri.setDimension(Integer.parseInt(cmd.getOptionValue("d", "5000")));
-                gtri.setSeed(Integer.parseInt(cmd.getOptionValue("s", "4")));
+                gtri.setDimension(Integer.parseInt(cmd.getOptionValue("d", "1000")));
+                gtri.setSeed(Integer.parseInt(cmd.getOptionValue("s", "10")));
                 gtri.setCacheSize(Integer.parseInt(cmd.getOptionValue("h", "10000")));
                 gtri.setStep(Integer.parseInt(cmd.getOptionValue("p", "10")));
                 try {
