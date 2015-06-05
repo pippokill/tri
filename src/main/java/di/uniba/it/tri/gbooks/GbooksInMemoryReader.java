@@ -1,7 +1,36 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Copyright (c) 2014, the Temporal Random Indexing AUTHORS.
+ *
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ *
+ * Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * Neither the name of the University of Bari nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+ * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ * POSSIBILITY OF SUCH DAMAGE.
+ *
+ * GNU GENERAL PUBLIC LICENSE - Version 3, 29 June 2007
+ *
  */
 package di.uniba.it.tri.gbooks;
 
@@ -56,6 +85,8 @@ public class GbooksInMemoryReader {
 
     private Map<Integer, Vector> ri;
 
+    private Map<Integer, String> inverseDict;
+
     private Random random;
 
     public void init(String storageDirname) throws IOException {
@@ -64,6 +95,13 @@ public class GbooksInMemoryReader {
         db = DBMaker.newFileDB(dbfile).cacheHardRefEnable().mmapFileEnableIfSupported().transactionDisable().closeOnJvmShutdown().make();
         //dictionary
         dict = db.get("dict");
+        LOG.info("Init inverse map...");
+        inverseDict = new HashMap<>();
+        Iterator<String> iterator = dict.keySet().iterator();
+        while (iterator.hasNext()) {
+            String key = iterator.next();
+            inverseDict.put(dict.get(key), key);
+        }
         //co-occur info
         occSet = db.get("occ");
         ri = new HashMap<>();
@@ -124,6 +162,32 @@ public class GbooksInMemoryReader {
         queue.poll();
         List<ObjectVector> list = new ArrayList<>(queue);
         Collections.sort(list, new ReverseObjectVectorComparator());
+        return list;
+    }
+
+    public List<ObjectVector> getNearestWords(String word, int startYear, int endYear, int n) throws IOException {
+        PriorityQueue<ObjectVector> queue = new PriorityQueue<>();
+        Integer wordId = dict.get(word);
+        int t = 0;
+        if (wordId != null) {
+            Iterable<CountEntry> occit = Fun.filter(occSet, wordId);
+            for (CountEntry entry : occit) {
+                if (entry.getYear() >= startYear && entry.getYear() <= endYear) {
+                    ObjectVector ov = new ObjectVector(inverseDict.get(entry.getWordId()), entry.getCount());
+                    if (queue.size() <= n) {
+                        queue.offer(ov);
+                    } else {
+                        queue.poll();
+                        queue.offer(ov);
+                    }
+                }
+                t++;
+            }
+        }
+        queue.poll();
+        List<ObjectVector> list = new ArrayList<>(queue);
+        Collections.sort(list, new ReverseObjectVectorComparator());
+        System.out.println(list.size() + "/" + t);
         return list;
     }
 
@@ -222,6 +286,20 @@ public class GbooksInMemoryReader {
                                         }
                                     } else {
                                         System.out.println("Vector not found");
+                                    }
+                                } else {
+                                    System.err.println("No valid arguments");
+                                }
+                            } catch (Exception ex) {
+                                System.err.println("Error to execute sim command: " + ex.getMessage());
+                            }
+                        } else if (s.matches("(^nhw$)|(^nhw\\s+.*$)")) {
+                            try {
+                                String[] split = s.split("\\s+");
+                                if (split.length > 4) {
+                                    List<ObjectVector> nv = gtri.getNearestWords(split[1], Integer.parseInt(split[2]), Integer.parseInt(split[3]), Integer.parseInt(split[4]));
+                                    for (ObjectVector ov : nv) {
+                                        System.out.println(ov.getKey() + "\t" + ov.getScore());
                                     }
                                 } else {
                                     System.err.println("No valid arguments");

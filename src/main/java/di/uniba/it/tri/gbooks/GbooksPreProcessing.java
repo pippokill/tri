@@ -40,6 +40,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NavigableSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -94,19 +96,14 @@ public class GbooksPreProcessing {
     private GBLineResult processLine(String line) {
         String[] values = line.split("\t");
         String[] words = values[0].split(" ");
-        String[] tokens = new String[words.length];
-        for (int i = 0; i < words.length; i++) {
-            String[] split = words[i].split("_");
-            if (split == null || split.length == 0) {
-                split = new String[]{words[i]};
-            }
-            if (split[0].length() > 0) {
-                tokens[i] = split[0].toLowerCase();
-            } else {
-                tokens[i] = words[i].toLowerCase();
+        List<String> tokens = new ArrayList<>(words.length);
+        for (String word : words) {
+            String[] split = word.split("_");
+            if (split.length > 0) {
+                tokens.add(split[0].toLowerCase());
             }
         }
-        return new GBLineResult(tokens, Integer.parseInt(values[1]), Integer.parseInt(values[2]));
+        return new GBLineResult(tokens.toArray(new String[tokens.size()]), Integer.parseInt(values[1]), Integer.parseInt(values[2]));
     }
 
     private void store(File dir) throws IOException {
