@@ -47,8 +47,6 @@ public class GbooksTRI {
 
     private int step = 10;
 
-    private int cacheSize = 10000;
-
     private int dimension = 1000;
 
     private int seed = 10;
@@ -77,28 +75,13 @@ public class GbooksTRI {
     public void build(String storageDirname, String outputDirname) throws IOException {
         //load DB
         File dbfile = new File(storageDirname + "/dbmap/gbmap");
-        DB db = DBMaker.newFileDB(dbfile).cacheSize(cacheSize).mmapFileEnableIfSupported().transactionDisable().closeOnJvmShutdown().make();
+        DB db = DBMaker.newFileDB(dbfile).cacheHardRefEnable().mmapFileEnableIfSupported().transactionDisable().closeOnJvmShutdown().make();
         //dictionary
         HTreeMap<String, Integer> dict = db.get("dict");
         //co-occur info
         NavigableSet<Fun.Tuple2<Integer, CountEntry>> occSet = db.get("occ");
-        //build random vector using word id
-        //LOG.log(Level.INFO, "Build Random Vectors...");
         Map<Integer, Vector> ri = new HashMap<>();
         Random random = new Random();
-        /*int cw = 0;
-         Iterator<Integer> idIt = dict.values().iterator();
-         while (idIt.hasNext()) {
-         ri.put(idIt.next(), VectorFactory.generateRandomVector(VectorType.REAL, dimension, seed, random));
-         cw++;
-         if (cw % 100 == 0) {
-         System.out.print(".");
-         if (cw % 10000 == 0) {
-         System.out.println("." + cw);
-         }
-         }
-         }
-         LOG.log(Level.INFO, "Total words: {0}", dict.size());*/
         int cw = 0;
         System.out.println();
         //build semantic vector
@@ -167,14 +150,6 @@ public class GbooksTRI {
         this.step = step;
     }
 
-    public int getCacheSize() {
-        return cacheSize;
-    }
-
-    public void setCacheSize(int cacheSize) {
-        this.cacheSize = cacheSize;
-    }
-
     public int getDimension() {
         return dimension;
     }
@@ -202,7 +177,6 @@ public class GbooksTRI {
                 .addOption("b", true, "Begin (year)")
                 .addOption("e", true, "End (year)")
                 .addOption("p", true, "Temporal step (optional, default 10)")
-                .addOption("h", true, "The cache size (optional, default 10000 elements)")
                 .addOption("s", true, "Seed (optional, default 10)")
                 .addOption("d", true, "Vector dimensions (optional, default 1000)");
     }
@@ -219,7 +193,6 @@ public class GbooksTRI {
                 gtri.setEndYear(Integer.parseInt(cmd.getOptionValue("e")));
                 gtri.setDimension(Integer.parseInt(cmd.getOptionValue("d", "1000")));
                 gtri.setSeed(Integer.parseInt(cmd.getOptionValue("s", "10")));
-                gtri.setCacheSize(Integer.parseInt(cmd.getOptionValue("h", "10000")));
                 gtri.setStep(Integer.parseInt(cmd.getOptionValue("p", "10")));
                 try {
                     gtri.build(cmd.getOptionValue("i"), cmd.getOptionValue("o"));

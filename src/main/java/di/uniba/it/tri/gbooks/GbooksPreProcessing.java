@@ -60,7 +60,7 @@ import org.mapdb.HTreeMap;
  *
  * @author pierpaolo
  */
-public class GbooksProcessingOneStep {
+public class GbooksPreProcessing {
 
     int minYear = Integer.MAX_VALUE;
 
@@ -72,7 +72,7 @@ public class GbooksProcessingOneStep {
 
     private final String dirname;
 
-    private static final Logger LOG = Logger.getLogger(GbooksProcessingOneStep.class.getName());
+    private static final Logger LOG = Logger.getLogger(GbooksPreProcessing.class.getName());
 
     private static final int MAX_LENGTH_WORD = 128;
 
@@ -80,7 +80,7 @@ public class GbooksProcessingOneStep {
 
     private static final long MAX_FILE_SIZE = Long.MAX_VALUE;
 
-    public GbooksProcessingOneStep(String dirname) {
+    public GbooksPreProcessing(String dirname) {
         this.dirname = dirname;
     }
 
@@ -199,7 +199,7 @@ public class GbooksProcessingOneStep {
             CommandLine cmd = cmdParser.parse(options, args);
             if (cmd.hasOption("i") && cmd.hasOption("t")) {
                 try {
-                    GbooksProcessingOneStep gbp = new GbooksProcessingOneStep(cmd.getOptionValue("t"));
+                    GbooksPreProcessing gbp = new GbooksPreProcessing(cmd.getOptionValue("t"));
                     gbp.setWordRegexpFilter(cmd.getOptionValue("r", "[a-z]+"));
                     gbp.init();
                     gbp.process(new File(cmd.getOptionValue("i")));
