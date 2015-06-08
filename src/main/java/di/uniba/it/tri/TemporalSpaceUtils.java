@@ -44,18 +44,22 @@ import di.uniba.it.tri.vectors.VectorReader;
 import di.uniba.it.tri.vectors.VectorStoreUtils;
 import di.uniba.it.tri.vectors.VectorType;
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.PriorityQueue;
+import java.util.Set;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.document.Document;
@@ -420,7 +424,32 @@ public class TemporalSpaceUtils {
             counter++;
         }
         return counter;
-
+    }
+    
+    /**
+     * Load stop words from a file (one stop word per line)
+     * @param filename The file name
+     * @return The set of stop words
+     * @throws IOException
+     */
+    public static Set<String> loadStopWord(String filename) throws IOException {
+        return loadStopWord(new File(filename));
+    }
+    
+    /**
+     * Load stop words from a file (one stop word per line)
+     * @param file The file
+     * @return The set of stop words
+     * @throws IOException
+     */
+    public static Set<String> loadStopWord(File file) throws IOException {
+        Set<String> set=new HashSet<>();
+        BufferedReader reader=new BufferedReader(new FileReader(file));
+        while (reader.ready()) {
+            set.add(reader.readLine().toLowerCase().trim());
+        }
+        reader.close();
+        return set;
     }
 
 }

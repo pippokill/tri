@@ -34,6 +34,7 @@
  */
 package di.uniba.it.tri.gbooks;
 
+import di.uniba.it.tri.TemporalSpaceUtils;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -41,8 +42,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NavigableSet;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.GZIPInputStream;
@@ -72,6 +75,8 @@ public class GbooksPreProcessing {
 
     private DB db;
 
+    private Set<String> sw;
+
     private final String dirname;
 
     private static final Logger LOG = Logger.getLogger(GbooksPreProcessing.class.getName());
@@ -99,7 +104,7 @@ public class GbooksPreProcessing {
         List<String> tokens = new ArrayList<>(words.length);
         for (String word : words) {
             String[] split = word.split("_");
-            if (split.length > 0) {
+            if (split.length > 0 && split[0].length() > 0) {
                 tokens.add(split[0].toLowerCase());
             }
         }
@@ -134,7 +139,7 @@ public class GbooksPreProcessing {
                         maxYear = Math.max(maxYear, gbres.getYear());
                         //generate id
                         for (String ngram : gbres.getNgram()) {
-                            if (ngram.matches(wordRegexpFilter) && ngram.length() < MAX_LENGTH_WORD) {
+                            if (!sw.contains(ngram) && ngram.matches(wordRegexpFilter) && ngram.length() < MAX_LENGTH_WORD) {
                                 Integer mid = dictMap.get(ngram);
                                 if (mid == null) {
                                     dictMap.put(ngram, wordId);
@@ -185,6 +190,7 @@ public class GbooksPreProcessing {
         options = new Options();
         options.addOption("i", true, "The corpus directory containing Google Books 2-grams dataset")
                 .addOption("t", true, "Output directory where processed data will be stored")
+                .addOption("s", true, "Load stop word file (optional)")
                 .addOption("r", true, "Regular expression used to filter token (optional, default [a-z]+");
     }
 
@@ -197,6 +203,12 @@ public class GbooksPreProcessing {
             if (cmd.hasOption("i") && cmd.hasOption("t")) {
                 try {
                     GbooksPreProcessing gbp = new GbooksPreProcessing(cmd.getOptionValue("t"));
+                    if (cmd.hasOption("s")) {
+                        Set<String> sw = TemporalSpaceUtils.loadStopWord(cmd.getOptionValue("s"));
+                        gbp.setSw(sw);
+                    } else {
+                        gbp.setSw(new HashSet<String>());
+                    }
                     gbp.setWordRegexpFilter(cmd.getOptionValue("r", "[a-z]+"));
                     gbp.init();
                     gbp.process(new File(cmd.getOptionValue("i")));
@@ -218,6 +230,14 @@ public class GbooksPreProcessing {
 
     public void setWordRegexpFilter(String wordRegexpFilter) {
         this.wordRegexpFilter = wordRegexpFilter;
+    }
+
+    public Set<String> getSw() {
+        return sw;
+    }
+
+    public void setSw(Set<String> sw) {
+        this.sw = sw;
     }
 
     private class GBLineResult {
