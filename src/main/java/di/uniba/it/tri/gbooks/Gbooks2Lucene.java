@@ -105,6 +105,8 @@ public class Gbooks2Lucene {
                 LOG.log(Level.INFO, "Working on file {0}", listFiles[k].getAbsolutePath());
                 GZIPInputStream is = new GZIPInputStream(new FileInputStream(listFiles[k]));
                 BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+                String lastText = "";
+                Document document = null;
                 while (reader.ready()) {
                     String line = reader.readLine();
                     GBLineResult gbres = null;
@@ -115,15 +117,22 @@ public class Gbooks2Lucene {
                     }
                     if (gbres != null) {
                         //check if all words in the ngram match regexp and max length
-                        StringBuilder text = new StringBuilder();
+                        StringBuilder sb = new StringBuilder();
                         for (String ngram : gbres.getNgram()) {
-                            text.append(ngram).append(" ");
+                            sb.append(ngram).append(" ");
                         }
-                        Document document = new Document();
-                        document.add(new TextField("ngram", text.toString(), Field.Store.YES));
-                        document.add(new IntField("year", gbres.getYear(), Field.Store.NO));
-                        document.add(new IntField("count", gbres.getCount(), Field.Store.YES));
-                        writer.addDocument(document);
+                        String textToInsert = sb.toString();
+                        if (textToInsert.length() > 0 && textToInsert.equals(lastText)) { //append temporal information
+                            document.add(new IntField("year", gbres.getYear(), Field.Store.NO));
+                            document.add(new IntField("count", gbres.getCount(), Field.Store.YES));
+                        } else if (textToInsert.length() > 0) {
+                            if (document != null) { //store previous document
+                                writer.addDocument(document);
+                            }
+                            document = new Document();
+                            document.add(new TextField("ngram", textToInsert, Field.Store.YES));
+                            lastText = textToInsert;
+                        }
                     }
                     c++;
                     if (c % 10000000 == 0) {
