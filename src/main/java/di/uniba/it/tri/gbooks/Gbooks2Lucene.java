@@ -71,15 +71,20 @@ public class Gbooks2Lucene {
 
     private static final Logger LOG = Logger.getLogger(Gbooks2Lucene.class.getName());
 
-    private static final int MAX_LENGTH_WORD = 128;
-
     private static final int FILE_LIMIT = Integer.MAX_VALUE;
 
     private static final long MAX_FILE_SIZE = Long.MAX_VALUE;
 
+    private final String indexdirname;
+
     public Gbooks2Lucene(String indexdirname) throws IOException {
+        this.indexdirname = indexdirname;
+        File dir = new File(indexdirname);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
         IndexWriterConfig config = new IndexWriterConfig(Version.LATEST, new WhitespaceAnalyzer());
-        writer = new IndexWriter(FSDirectory.open(new File(indexdirname)), config);
+        writer = new IndexWriter(FSDirectory.open(new File(indexdirname + "/idx_0/")), config);
     }
 
     private GBLineResult processLine(String line) {
@@ -98,7 +103,9 @@ public class Gbooks2Lucene {
     private void store(File dir) throws IOException {
         LOG.info("Indexing...");
         long c = 0;
+        int numberOfDocuments = 0;
         int fileCount = 0;
+        int idxc = 1;
         File[] listFiles = dir.listFiles();
         for (int k = 0; k < listFiles.length && fileCount < FILE_LIMIT; k++) {
             if (listFiles[k].getName().startsWith("googlebooks-") && listFiles[k].getName().endsWith(".gz") && listFiles[k].length() < MAX_FILE_SIZE) {
@@ -127,7 +134,19 @@ public class Gbooks2Lucene {
                             document.add(new IntField("count", gbres.getCount(), Field.Store.YES));
                         } else if (textToInsert.length() > 0) {
                             if (document != null) { //store previous document
-                                writer.addDocument(document);
+                                if (numberOfDocuments < (Integer.MAX_VALUE - 10)) {
+                                    writer.addDocument(document);
+                                    numberOfDocuments++;
+                                } else {
+                                    LOG.info("Change index...");
+                                    writer.close();
+                                    IndexWriterConfig config = new IndexWriterConfig(Version.LATEST, new WhitespaceAnalyzer());
+                                    writer = new IndexWriter(FSDirectory.open(new File(indexdirname + "/idx_" + idxc + "/")), config);
+                                    idxc++;
+                                    writer.addDocument(document);
+                                    numberOfDocuments = 1;
+                                }
+
                             }
                             document = new Document();
                             document.add(new TextField("ngram", textToInsert, Field.Store.YES));
@@ -183,7 +202,7 @@ public class Gbooks2Lucene {
                 }
             } else {
                 HelpFormatter helpFormatter = new HelpFormatter();
-                helpFormatter.printHelp("Process Google Books 2-grams dataset and store in Lucene", options, true);
+                helpFormatter.printHelp("Process Google Books n-grams dataset and store in Lucene", options, true);
             }
         } catch (ParseException ex) {
             LOG.log(Level.SEVERE, null, ex);
