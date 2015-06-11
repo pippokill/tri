@@ -9,6 +9,10 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.cli.BasicParser;
@@ -17,6 +21,7 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
@@ -31,6 +36,48 @@ import org.apache.lucene.store.FSDirectory;
 public class GbooksLuceneSearcher {
 
     private static final Logger LOG = Logger.getLogger(GbooksLuceneSearcher.class.getName());
+
+    private final String indexDir;
+
+    private final List<IndexSearcher> slist = new ArrayList<>();
+
+    public GbooksLuceneSearcher(String indexDir) throws IOException {
+        this.indexDir = indexDir;
+    }
+
+    private void init() throws IOException {
+        File[] listFiles = new File(indexDir).listFiles();
+        for (File idxdir : listFiles) {
+            if (idxdir.isDirectory() && idxdir.getName().startsWith("idx_")) {
+                LOG.log(Level.INFO, "Open index: {0}", idxdir.getAbsolutePath());
+                DirectoryReader dr = DirectoryReader.open(FSDirectory.open(idxdir));
+                IndexSearcher searcher = new IndexSearcher(dr);
+                slist.add(searcher);
+            }
+        }
+        LOG.log(Level.INFO, "Indices: {0}", slist.size());
+    }
+
+    public List<NgramSearchResult> search(String querytext, int n) throws IOException, org.apache.lucene.queryparser.classic.ParseException {
+        QueryParser qp = new QueryParser("ngram", new WhitespaceAnalyzer());
+        Query query = qp.parse(querytext);
+        System.out.println(query.toString());
+        PriorityQueue<NgramSearchResult> queue = new PriorityQueue<>();
+        for (IndexSearcher is : slist) {
+            TopDocs topdocs = is.search(query, n);
+            for (int i = 0; i < topdocs.scoreDocs.length; i++) {
+                Document doc = is.doc(topdocs.scoreDocs[i].doc);
+                NgramSearchResult r = new NgramSearchResult(doc.get("ngram"), topdocs.scoreDocs[i].score, doc.getField("count").numericValue().intValue());
+                if (queue.size() < n) {
+                    queue.offer(r);
+                } else {
+                    queue.poll();
+                    queue.offer(r);
+                }
+            }
+        }
+        return new ArrayList<>(queue);
+    }
 
     static Options options;
 
@@ -48,9 +95,8 @@ public class GbooksLuceneSearcher {
         try {
             CommandLine cmd = cmdParser.parse(options, args);
             if (cmd.hasOption("i")) {
-                DirectoryReader dr = DirectoryReader.open(FSDirectory.open(new File(cmd.getOptionValue("i"))));
-                IndexSearcher searcher = new IndexSearcher(dr);
-                QueryParser qp = new QueryParser("ngram", new WhitespaceAnalyzer());
+                GbooksLuceneSearcher searcher = new GbooksLuceneSearcher(cmd.getOptionValue("i"));
+                searcher.init();
                 BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
                 boolean read = true;
                 int topn = 25;
@@ -61,17 +107,15 @@ public class GbooksLuceneSearcher {
                     if (s.matches("(^search$)|(^search\\s+.*$)")) {
                         try {
                             String querytext = s.substring(s.indexOf("h") + 1);
-                            Query query = qp.parse(querytext);
-                            System.out.println(query.toString());
-                            TopDocs topdocs = searcher.search(query, topn);
-                            for (int i = 0; i < topdocs.scoreDocs.length; i++) {
-                                System.out.println(searcher.doc(topdocs.scoreDocs[i].doc).get("ngram") + "\t" + searcher.doc(topdocs.scoreDocs[i].doc).get("count"));
+                            List<NgramSearchResult> search = searcher.search(querytext, topn);
+                            for (NgramSearchResult r : search) {
+                                System.out.println(r);
                             }
-                            System.out.println("===(" + topdocs.scoreDocs.length + ")========================================");
+                            System.out.println("===(" + search.size() + ")========================================");
                         } catch (Exception ex) {
                             System.err.println("Error to execute search command: " + ex.getMessage());
                         }
-                    } else if (s.matches("(^set$)|(^!s\\s+.*$)")) {
+                    } else if (s.matches("(^set$)|(^set\\s+.*$)")) {
                         try {
                             String[] split = s.split("\\s+");
                             if (split.length > 1) {
@@ -80,10 +124,9 @@ public class GbooksLuceneSearcher {
                         } catch (Exception ex) {
                             System.err.println("Error to execute set command: " + ex.getMessage());
                         }
-                    } else if (s.equals("!q")) {
+                    } else if (s.equals("exit") || s.equals("quit")) {
                         System.out.println("Goodbye");
                         read = false;
-                        dr.close();
                     } else {
                         System.out.println("Command not valid: " + s);
                     }
