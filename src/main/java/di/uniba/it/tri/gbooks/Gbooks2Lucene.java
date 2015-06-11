@@ -84,7 +84,7 @@ public class Gbooks2Lucene {
             dir.mkdirs();
         }
         IndexWriterConfig config = new IndexWriterConfig(Version.LATEST, new WhitespaceAnalyzer());
-        writer = new IndexWriter(FSDirectory.open(new File(indexdirname + "/idx_0/")), config);
+        writer = new IndexWriter(FSDirectory.open(new File(this.indexdirname + "/idx_0/")), config);
     }
 
     private GBLineResult processLine(String line) {
@@ -128,12 +128,12 @@ public class Gbooks2Lucene {
                         for (String ngram : gbres.getNgram()) {
                             sb.append(ngram).append(" ");
                         }
-                        String textToInsert = sb.toString();
+                        String textToInsert = sb.toString().trim();
                         if (textToInsert.length() > 0 && textToInsert.equals(lastText)) { //append temporal information
                             document.add(new IntField("year", gbres.getYear(), Field.Store.NO));
                             document.add(new IntField("count", gbres.getCount(), Field.Store.YES));
                         } else if (textToInsert.length() > 0) {
-                            if (document != null) { //store previous document
+                            if (document != null) { //store previous document, Lucene support only Int32 doc id
                                 if (numberOfDocuments < (Integer.MAX_VALUE - 10)) {
                                     writer.addDocument(document);
                                     numberOfDocuments++;
