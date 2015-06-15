@@ -41,7 +41,9 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.logging.Level;
@@ -113,8 +115,7 @@ public class GbooksLuceneReader {
                 if (mode == Modes.TEXT) {
                     Document doc = searcher.doc(sd.doc);
                     String[] split = doc.get("ngram").split("\\s+");
-                    IndexableField[] fieldsYear = doc.getFields("year");
-                    IndexableField[] fieldsCount = doc.getFields("count");
+                    List<IndexableField> fields = doc.getFields();
                     for (String occ : split) {
                         if (!occ.equals(word)) {
                             Vector riv = ri.get(occ);
@@ -122,9 +123,12 @@ public class GbooksLuceneReader {
                                 riv = VectorFactory.generateRandomVector(VectorType.REAL, dimension, seed, random);
                                 ri.put(occ, riv);
                             }
-                            for (int k = 0; k < fieldsCount.length; k++) {
-                                if (fieldsYear[k].numericValue().intValue() >= startYear && fieldsYear[k].numericValue().intValue() <= endYear) {
-                                    vector.superpose(riv, fieldsCount[k].numericValue().intValue(), null);
+                            for (IndexableField field : fields) {
+                                if (field.name().matches("[0-9]+")) {
+                                    int intYear = Integer.parseInt(field.name());
+                                    if (intYear >= startYear && intYear <= endYear) {
+                                        vector.superpose(riv, field.numericValue().intValue(), null);
+                                    }
                                 }
                             }
                         }
@@ -132,19 +136,25 @@ public class GbooksLuceneReader {
                 } else if (mode == Modes.TV || mode == Modes.TPV) {
                     Document doc = searcher.doc(sd.doc);
                     Terms tv = dirReader.getTermVector(sd.doc, "ngram");
-                    IndexableField[] fieldsYear = doc.getFields("year");
-                    IndexableField[] fieldsCount = doc.getFields("count");
-                    for (int k = 0; k < fieldsCount.length; k++) {
-                        if (fieldsYear[k].numericValue().intValue() >= startYear && fieldsYear[k].numericValue().intValue() <= endYear) {
-                            TermsEnum it = tv.iterator(TermsEnum.EMPTY);
-                            while (it.next() != null) {
-                                String occ = it.term().utf8ToString();
-                                Vector riv = ri.get(occ);
-                                if (riv == null) {
-                                    riv = VectorFactory.generateRandomVector(VectorType.REAL, dimension, seed, random);
-                                    ri.put(occ, riv);
+                    List<String> termList = new ArrayList<>();
+                    TermsEnum it = tv.iterator(TermsEnum.EMPTY);
+                    while (it.next() != null) {
+                        String occ = it.term().utf8ToString();
+                        termList.add(occ);
+                    }
+                    List<IndexableField> fields = doc.getFields();
+                    for (IndexableField field : fields) {
+                        if (field.name().matches("[0-9]+")) {
+                            int intYear = Integer.parseInt(field.name());
+                            if (intYear >= startYear && intYear <= endYear) {
+                                for (String occ : termList) {
+                                    Vector riv = ri.get(occ);
+                                    if (riv == null) {
+                                        riv = VectorFactory.generateRandomVector(VectorType.REAL, dimension, seed, random);
+                                        ri.put(occ, riv);
+                                    }
+                                    vector.superpose(riv, field.numericValue().intValue(), null);
                                 }
-                                vector.superpose(riv, fieldsCount[k].numericValue().intValue(), null);
                             }
                         }
                     }

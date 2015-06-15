@@ -156,9 +156,10 @@ public class Gbooks2Lucene {
                         String textToInsert = sb.toString().trim();
                         if (textToInsert.length() > 0 && textToInsert.equals(lastText)) { //append temporal information
                             document.add(new IntField("year", gbres.getYear(), Field.Store.NO));
-                            document.add(new IntField("count", gbres.getCount(), Field.Store.YES));
+                            //document.add(new IntField("count", gbres.getCount(), Field.Store.YES));
+                            document.add(new IntField(String.valueOf(gbres.getYear()), gbres.getCount(), Field.Store.YES));
                         } else if (textToInsert.length() > 0) {
-                            if (document != null) { //store previous document, Lucene support only Int32 doc id
+                            if (document != null) { //store previous document and switch to new sub-index (Lucene support only Int32 doc id)
                                 if (numberOfDocuments < (Integer.MAX_VALUE - 10)) {
                                     writer.addDocument(document);
                                     numberOfDocuments++;
