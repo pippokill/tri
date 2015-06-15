@@ -54,6 +54,7 @@ import org.apache.commons.cli.ParseException;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.IndexWriter;
@@ -76,6 +77,30 @@ public class Gbooks2Lucene {
     private static final long MAX_FILE_SIZE = Long.MAX_VALUE;
 
     private final String indexdirname;
+
+    private Modes mode = Modes.TEXT;
+
+    private static enum Modes {
+
+        TEXT, TV, TPV
+    };
+
+    public static final FieldType FIELD_TYPE_TV = new FieldType();
+
+    public static final FieldType FIELD_TYPE_TPV = new FieldType();
+
+    static {
+        FIELD_TYPE_TV.setIndexed(true);
+        FIELD_TYPE_TV.setTokenized(true);
+        FIELD_TYPE_TV.setStored(false);
+        FIELD_TYPE_TV.setStoreTermVectors(true);
+
+        FIELD_TYPE_TPV.setIndexed(true);
+        FIELD_TYPE_TPV.setTokenized(true);
+        FIELD_TYPE_TPV.setStored(false);
+        FIELD_TYPE_TPV.setStoreTermVectors(true);
+        FIELD_TYPE_TPV.setStoreTermVectorPositions(true);
+    }
 
     public Gbooks2Lucene(String indexdirname) throws IOException {
         this.indexdirname = indexdirname;
@@ -149,7 +174,13 @@ public class Gbooks2Lucene {
 
                             }
                             document = new Document();
-                            document.add(new TextField("ngram", textToInsert, Field.Store.YES));
+                            if (mode == Modes.TEXT) {
+                                document.add(new TextField("ngram", textToInsert, Field.Store.YES));
+                            } else if (mode == Modes.TV) {
+                                document.add(new Field("ngram", textToInsert, FIELD_TYPE_TV));
+                            } else if (mode == Modes.TPV) {
+                                document.add(new Field("ngram", textToInsert, FIELD_TYPE_TPV));
+                            }
                             lastText = textToInsert;
                         }
                     }
@@ -182,7 +213,8 @@ public class Gbooks2Lucene {
     static {
         options = new Options();
         options.addOption("i", true, "The corpus directory containing Google Books 2-grams dataset")
-                .addOption("t", true, "Output directory where the index will be stored");
+                .addOption("o", true, "Output directory where the index will be stored")
+                .addOption("t", true, "Index type (TEXT, TPV, TV), default TEXT");
     }
 
     /**
@@ -191,9 +223,17 @@ public class Gbooks2Lucene {
     public static void main(String[] args) {
         try {
             CommandLine cmd = cmdParser.parse(options, args);
-            if (cmd.hasOption("i") && cmd.hasOption("t")) {
+            if (cmd.hasOption("i") && cmd.hasOption("o")) {
                 try {
-                    Gbooks2Lucene gbp = new Gbooks2Lucene(cmd.getOptionValue("t"));
+                    Gbooks2Lucene gbp = new Gbooks2Lucene(cmd.getOptionValue("o"));
+                    String indexType = cmd.getOptionValue("t", "TEXT");
+                    if (indexType.equalsIgnoreCase("TEXT")) {
+                        gbp.mode = Modes.TEXT;
+                    } else if (indexType.equalsIgnoreCase("TPV")) {
+                        gbp.mode = Modes.TPV;
+                    } else if (indexType.equalsIgnoreCase("TV")) {
+                        gbp.mode = Modes.TV;
+                    }
                     //attach a shutdown hook
                     Runtime.getRuntime().addShutdownHook(new Thread(new ShutdownIndex(gbp.getWriter())));
                     gbp.process(new File(cmd.getOptionValue("i")));

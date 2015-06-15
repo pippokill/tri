@@ -12,7 +12,6 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.cli.BasicParser;
@@ -49,13 +48,13 @@ public class GbooksLuceneSearcher {
         File[] listFiles = new File(indexDir).listFiles();
         for (File idxdir : listFiles) {
             if (idxdir.isDirectory() && idxdir.getName().startsWith("idx_")) {
-                LOG.log(Level.INFO, "Open index: {0}", idxdir.getAbsolutePath());
+                LOG.log(Level.INFO, "Opening index... {0}", idxdir.getAbsolutePath());
                 DirectoryReader dr = DirectoryReader.open(FSDirectory.open(idxdir));
                 IndexSearcher searcher = new IndexSearcher(dr);
                 slist.add(searcher);
             }
         }
-        LOG.log(Level.INFO, "Indices: {0}", slist.size());
+        LOG.log(Level.INFO, "Done, opened {0} indices!", slist.size());
     }
 
     public List<NgramSearchResult> search(String querytext, int n) throws IOException, org.apache.lucene.queryparser.classic.ParseException {
@@ -65,6 +64,7 @@ public class GbooksLuceneSearcher {
         PriorityQueue<NgramSearchResult> queue = new PriorityQueue<>();
         for (IndexSearcher is : slist) {
             TopDocs topdocs = is.search(query, n);
+            System.out.println("Total docs: " + topdocs.scoreDocs.length + "/" + topdocs.totalHits);
             for (int i = 0; i < topdocs.scoreDocs.length; i++) {
                 Document doc = is.doc(topdocs.scoreDocs[i].doc);
                 NgramSearchResult r = new NgramSearchResult(doc.get("ngram"), topdocs.scoreDocs[i].score, doc.getField("count").numericValue().intValue());
@@ -107,6 +107,7 @@ public class GbooksLuceneSearcher {
                     if (s.matches("(^search$)|(^search\\s+.*$)")) {
                         try {
                             String querytext = s.substring(s.indexOf("h") + 1);
+                            System.out.println("Searching...");
                             List<NgramSearchResult> search = searcher.search(querytext, topn);
                             for (NgramSearchResult r : search) {
                                 System.out.println(r);
