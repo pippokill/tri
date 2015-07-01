@@ -43,6 +43,8 @@ import di.uniba.it.tri.vectors.VectorFactory;
 import di.uniba.it.tri.vectors.VectorReader;
 import di.uniba.it.tri.vectors.VectorType;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -538,9 +540,9 @@ public class Command {
      */
     public void fullHelp() {
         if (help != null) {
-            Iterator<String> iterator = help.stringPropertyNames().iterator();
-            while (iterator.hasNext()) {
-                String cmd = iterator.next();
+            List<String> commands = new ArrayList<>(help.stringPropertyNames());
+            Collections.sort(commands);
+            for (String cmd:commands) {
                 TriShell.println(cmd + "\t" + help.getProperty(cmd));
             }
         }
