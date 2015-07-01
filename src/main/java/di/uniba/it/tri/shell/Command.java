@@ -542,7 +542,7 @@ public class Command {
         if (help != null) {
             List<String> commands = new ArrayList<>(help.stringPropertyNames());
             Collections.sort(commands);
-            for (String cmd:commands) {
+            for (String cmd : commands) {
                 TriShell.println(cmd + "\t" + help.getProperty(cmd));
             }
         }
@@ -859,7 +859,13 @@ public class Command {
             if (vr2 == null) {
                 throw new Exception("no valid store for: " + split[3]);
             }
-            List<ObjectVector> sims = TemporalSpaceUtils.sims(vr1, vr2, Integer.parseInt(split[1]));
+            double min = -0.5;
+            double max = 1.5;
+            if (split.length > 5) {
+                min = Double.parseDouble(split[4]);
+                max = Double.parseDouble(split[5]);
+            }
+            List<ObjectVector> sims = TemporalSpaceUtils.sims(vr1, vr2, Integer.parseInt(split[1]), min, max);
             for (ObjectVector ov : sims) {
                 TriShell.println(ov.getKey() + "\t" + ov.getScore());
             }
@@ -886,7 +892,7 @@ public class Command {
         help.setProperty("count", "count <vector reader name> - return the number of vectors in the vector reader");
         help.setProperty("tri", "tri <vector reader name> <start year> <end year> - create a new temporal space named vector reader name form start_year to end_year");
         help.setProperty("ftri", "ftri <output filename> <start year> <end year> - create a new temporal space form start_year to end_year and save it on disk");
-        help.setProperty("sims", "sims <number of results> <vector reader name1> <vector reader name2> - find words that change meaning between two WordSpaces");
+        help.setProperty("sims", "sims <number of results> <vector reader name1> <vector reader name2> <min>? <max>?  - find words that change meaning between two WordSpaces. Min and max are used as thresholds for filtering results (optional).");
         help.setProperty("compare", "compare <number of results> <vector reader name1> <vector reader name1> <vector name1> <vector name2> - compare nearest vectors of vector name1 in vector reader name1 and vector name2 in vector reader name2");
         //help of commands related to sets
         help.setProperty("cset", "cset <name> - create a new set");

@@ -74,14 +74,17 @@ import org.apache.lucene.util.Version;
 
 /**
  * Utils for managing WordSpaces
+ *
  * @author pierpaolo
  */
 public class TemporalSpaceUtils {
 
     /**
      * Combine two or more WordSpaces using vectors sum
+     *
      * @param spaces WordSpaces
-     * @return The WordSpace as a Map that is the combination of given WordSpaces
+     * @return The WordSpace as a Map that is the combination of given
+     * WordSpaces
      */
     public static Map<String, Vector> combineSpaces(Map<String, Vector>... spaces) {
         Map<String, Vector> newSpace = new HashMap<>();
@@ -107,8 +110,10 @@ public class TemporalSpaceUtils {
 
     /**
      * Combine two or more VectorReaders using vectors sum
+     *
      * @param readers VectorReaders
-     * @return The WordSpace as a Map that is the combination of given VectorReaders
+     * @return The WordSpace as a Map that is the combination of given
+     * VectorReaders
      * @throws IOException
      */
     public static Map<String, Vector> combineVectorReader(VectorReader... readers) throws IOException {
@@ -134,6 +139,7 @@ public class TemporalSpaceUtils {
 
     /**
      * Combine two or more VectorReaders using vectors sum
+     *
      * @param readers VectorReaders
      * @return The VectorReader that is the combination of given VectorReaders
      * @throws IOException
@@ -163,7 +169,9 @@ public class TemporalSpaceUtils {
     }
 
     /**
-     * Combine two or more VectorReaders using vectors sum and save the result in a File
+     * Combine two or more VectorReaders using vectors sum and save the result
+     * in a File
+     *
      * @param outputFile The File
      * @param readers VectorReaders
      * @throws IOException
@@ -210,6 +218,7 @@ public class TemporalSpaceUtils {
 
     /**
      * Return the list of the n nearest vectors given a word
+     *
      * @param store The VectorReader that contains vectors
      * @param word The word
      * @param n The number of nearest vectors
@@ -227,6 +236,7 @@ public class TemporalSpaceUtils {
 
     /**
      * Return the list of the n nearest vectors given a vector
+     *
      * @param store The VectorReader that contains vectors
      * @param vector The vector
      * @param n The number of nearest vectors
@@ -254,7 +264,9 @@ public class TemporalSpaceUtils {
     }
 
     /**
-     * Given a directory of stored vector file readers returns the list of files belonging to a specified time period
+     * Given a directory of stored vector file readers returns the list of files
+     * belonging to a specified time period
+     *
      * @param startDir The directory
      * @param start The begin of the time period
      * @param end The end of the time period
@@ -276,7 +288,9 @@ public class TemporalSpaceUtils {
     }
 
     /**
-     * Return a list of available years given the directory where file readers are stored and the time period
+     * Return a list of available years given the directory where file readers
+     * are stored and the time period
+     *
      * @param startDir The directory
      * @param start The begin of the time period
      * @param end The end of the time period
@@ -299,6 +313,7 @@ public class TemporalSpaceUtils {
 
     /**
      * Index the file of elemental vectors
+     *
      * @param stardDir The directory containing the WordSpaces
      * @return The index of elemental vectors
      * @throws IOException
@@ -310,6 +325,7 @@ public class TemporalSpaceUtils {
 
     /**
      * Index a VectorReader in order to search words
+     *
      * @param vreader The VectorReader
      * @return The index
      * @throws IOException
@@ -331,6 +347,7 @@ public class TemporalSpaceUtils {
 
     /**
      * Index a file in order to search words
+     *
      * @param file The file
      * @return The index
      * @throws IOException
@@ -345,6 +362,7 @@ public class TemporalSpaceUtils {
 
     /**
      * Get the elemental vectors file
+     *
      * @param startDir The directory containing the WordSpaces
      * @return
      */
@@ -354,6 +372,7 @@ public class TemporalSpaceUtils {
 
     /**
      * Get the file in which vectors of a specified year are stored
+     *
      * @param startDir The directory containing the WordSpaces
      * @param year The year
      * @return The file
@@ -364,6 +383,7 @@ public class TemporalSpaceUtils {
 
     /**
      * Get the file in which vectors of a specified year are stored
+     *
      * @param startDir The directory containing the WordSpaces
      * @param year The year
      * @return The file
@@ -374,13 +394,14 @@ public class TemporalSpaceUtils {
 
     /**
      * Return the less n similar vectors in two WordSpaces
+     *
      * @param store1 The first Vector Reader
      * @param store2 The second Vector Reader
      * @param n The number of vectors
      * @return The list of less n similar vectors
      * @throws IOException
      */
-    public static List<ObjectVector> sims(VectorReader store1, VectorReader store2, int n) throws IOException {
+    public static List<ObjectVector> sims(VectorReader store1, VectorReader store2, int n, double min, double max) throws IOException {
         PriorityQueue<ObjectVector> queue = new PriorityQueue<>();
         Iterator<ObjectVector> allVectors = store1.getAllVectors();
         int c = 0;
@@ -390,12 +411,14 @@ public class TemporalSpaceUtils {
             Vector vector = store2.getVector(ov.getKey());
             if (vector != null) {
                 double overlap = 1 - ov.getVector().measureOverlap(vector);
-                ov.setScore(overlap);
-                if (queue.size() <= n) {
-                    queue.offer(ov);
-                } else {
-                    queue.poll();
-                    queue.offer(ov);
+                if (overlap >= min && overlap <= max) {
+                    ov.setScore(overlap);
+                    if (queue.size() <= n) {
+                        queue.offer(ov);
+                    } else {
+                        queue.poll();
+                        queue.offer(ov);
+                    }
                 }
             }
             c++;
@@ -412,6 +435,7 @@ public class TemporalSpaceUtils {
 
     /**
      * Count the number of vectors in a VectorReader
+     *
      * @param reader The VectorReader
      * @return The number of vectors
      * @throws IOException
@@ -425,9 +449,10 @@ public class TemporalSpaceUtils {
         }
         return counter;
     }
-    
+
     /**
      * Load stop words from a file (one stop word per line)
+     *
      * @param filename The file name
      * @return The set of stop words
      * @throws IOException
@@ -435,16 +460,17 @@ public class TemporalSpaceUtils {
     public static Set<String> loadStopWord(String filename) throws IOException {
         return loadStopWord(new File(filename));
     }
-    
+
     /**
      * Load stop words from a file (one stop word per line)
+     *
      * @param file The file
      * @return The set of stop words
      * @throws IOException
      */
     public static Set<String> loadStopWord(File file) throws IOException {
-        Set<String> set=new HashSet<>();
-        BufferedReader reader=new BufferedReader(new FileReader(file));
+        Set<String> set = new HashSet<>();
+        BufferedReader reader = new BufferedReader(new FileReader(file));
         while (reader.ready()) {
             set.add(reader.readLine().toLowerCase().trim());
         }
