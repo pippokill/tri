@@ -34,6 +34,8 @@
  */
 package di.uniba.it.tri.occ;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Multiset.Entry;
@@ -69,15 +71,15 @@ import org.apache.lucene.analysis.util.CharArraySet;
  * @author pierpaolo
  */
 public class BuildOccurrence {
-
+    
     private int winsize = 5;
-
+    
     private File outputDir = new File("./");
-
+    
     private static final Logger logger = Logger.getLogger(BuildOccurrence.class.getName());
-
+    
     private Extractor extractor;
-
+    
     private String filenameRegExp = "^.+$";
 
     /**
@@ -151,9 +153,11 @@ public class BuildOccurrence {
     public void setExtractor(Extractor extractor) {
         this.extractor = extractor;
     }
-
-    private Map<String, Multiset<String>> count(File startingDir, int year) throws IOException {
-        Map<String, Multiset<String>> map = new HashMap<>();
+    
+    private OccOutput count(File startingDir, int year) throws IOException {
+        Map<Integer, Multiset<Integer>> map = new HashMap<>();
+        BiMap<String, Integer> dict = HashBiMap.create();
+        int id = 0;
         File[] listFiles = startingDir.listFiles();
         for (File file : listFiles) {
             if (file.getName().matches(filenameRegExp) && file.getName().lastIndexOf("_") > -1 && file.getName().endsWith(String.valueOf(year))) {
@@ -165,20 +169,32 @@ public class BuildOccurrence {
                     int end = Math.min(tokens.size() - 1, i + winsize);
                     for (int j = start; j < end; j++) {
                         if (i != j) {
-                            Multiset<String> multiset = map.get(tokens.get(i));
+                            Integer tid = dict.get(tokens.get(i));
+                            if (tid == null) {
+                                tid = id;
+                                dict.put(tokens.get(i), tid);
+                                id++;
+                            }
+                            Multiset<Integer> multiset = map.get(tid);
                             if (multiset == null) {
                                 multiset = HashMultiset.create();
-                                map.put(tokens.get(i), multiset);
+                                map.put(tid, multiset);
                             }
-                            multiset.add(tokens.get(j));
+                            Integer tjid = dict.get(tokens.get(j));
+                            if (tjid == null) {
+                                tjid = id;
+                                dict.put(tokens.get(j), tjid);
+                                id++;
+                            }
+                            multiset.add(tjid);
                         }
                     }
                 }
             }
         }
-        return map;
+        return new OccOutput(map, dict);
     }
-
+    
     private List<String> getTokens(Reader reader) throws IOException {
         List<String> tokens = new ArrayList<>();
         Analyzer analyzer = new StandardAnalyzer(CharArraySet.EMPTY_SET);
@@ -238,32 +254,30 @@ public class BuildOccurrence {
         logger.log(Level.INFO, "To year: {0}", maxYear);
         for (int k = minYear; k <= maxYear; k++) {
             logger.log(Level.INFO, "Counting year: {0}", k);
-            Map<String, Multiset<String>> count = count(startingDir, k);
-            if (!count.isEmpty()) {
-                save(count, k);
-            }
+            OccOutput count = count(startingDir, k);
+            save(count, k);
         }
     }
-
-    private void save(Map<String, Multiset<String>> count, int year) throws IOException {
+    
+    private void save(OccOutput count, int year) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(outputDir.getAbsolutePath() + "/count_" + year));
-        Iterator<String> keys = count.keySet().iterator();
+        Iterator<String> keys = count.getDict().keySet().iterator();
         while (keys.hasNext()) {
             String key = keys.next();
             writer.append(key);
-            Set<Multiset.Entry<String>> entrySet = count.get(key).entrySet();
-            for (Entry<String> entry : entrySet) {
-                writer.append("\t").append(entry.getElement()).append("\t").append(String.valueOf(entry.getCount()));
+            Set<Multiset.Entry<Integer>> entrySet = count.getOcc().get(count.getDict().get(key)).entrySet();
+            for (Entry<Integer> entry : entrySet) {
+                writer.append("\t").append(count.getDict().inverse().get(entry.getElement())).append("\t").append(String.valueOf(entry.getCount()));
             }
             writer.newLine();
         }
         writer.close();
     }
-
+    
     static Options options;
-
+    
     static CommandLineParser cmdParser = new BasicParser();
-
+    
     static {
         options = new Options();
         options.addOption("c", true, "The corpus directory containing files with year metadata")
@@ -301,5 +315,34 @@ public class BuildOccurrence {
             logger.log(Level.SEVERE, null, ex);
         }
     }
-
+    
+    static class OccOutput {
+        
+        private Map<Integer, Multiset<Integer>> occ;
+        
+        private BiMap<String, Integer> dict;
+        
+        public OccOutput(Map<Integer, Multiset<Integer>> occ, BiMap<String, Integer> dict) {
+            this.occ = occ;
+            this.dict = dict;
+        }
+        
+        public Map<Integer, Multiset<Integer>> getOcc() {
+            return occ;
+        }
+        
+        public void setOcc(Map<Integer, Multiset<Integer>> occ) {
+            this.occ = occ;
+        }
+        
+        public BiMap<String, Integer> getDict() {
+            return dict;
+        }
+        
+        public void setDict(BiMap<String, Integer> dict) {
+            this.dict = dict;
+        }
+        
+    }
+    
 }
