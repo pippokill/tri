@@ -40,6 +40,7 @@ import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Multiset.Entry;
 import di.uniba.it.tri.extractor.Extractor;
+import di.uniba.it.tri.extractor.IterableExtractor;
 import di.uniba.it.tri.tokenizer.TriTokenizer;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -72,7 +73,9 @@ public class BuildOccurrence {
 
     private static final Logger logger = Logger.getLogger(BuildOccurrence.class.getName());
 
-    private Extractor extractor;
+    private Extractor extractor = null;
+
+    private IterableExtractor itExtractor = null;
 
     private TriTokenizer tokenizer;
 
@@ -160,6 +163,24 @@ public class BuildOccurrence {
     }
 
     /**
+     * Get the iterable extractor
+     *
+     * @return The iterable extractor
+     */
+    public IterableExtractor getItExtractor() {
+        return itExtractor;
+    }
+
+    /**
+     * Set the iterable extractor
+     *
+     * @param itExtractor The iterable extractor
+     */
+    public void setItExtractor(IterableExtractor itExtractor) {
+        this.itExtractor = itExtractor;
+    }
+
+    /**
      * Set the tokenizer
      *
      * @param tokenizer The tokenizer
@@ -209,6 +230,49 @@ public class BuildOccurrence {
         return new OccOutput(map, dict);
     }
 
+    private OccOutput countIterable(File startingDir, int year) throws IOException {
+        Map<Integer, Multiset<Integer>> map = new HashMap<>();
+        BiMap<String, Integer> dict = HashBiMap.create();
+        int id = 0;
+        File[] listFiles = startingDir.listFiles();
+        for (File file : listFiles) {
+            if (file.getName().matches(filenameRegExp) && file.getName().lastIndexOf("_") > -1 && file.getName().endsWith(String.valueOf(year))) {
+                logger.log(Level.INFO, "Working file: {0}", file.getName());
+                itExtractor.extract(file);
+                while (itExtractor.hasNext()) {
+                    List<String> tokens = tokenizer.getTokens(itExtractor.next());
+                    for (int i = 0; i < tokens.size(); i++) {
+                        int start = Math.max(0, i - winsize);
+                        int end = Math.min(tokens.size() - 1, i + winsize);
+                        for (int j = start; j < end; j++) {
+                            if (i != j) {
+                                Integer tid = dict.get(tokens.get(i));
+                                if (tid == null) {
+                                    tid = id;
+                                    dict.put(tokens.get(i), tid);
+                                    id++;
+                                }
+                                Multiset<Integer> multiset = map.get(tid);
+                                if (multiset == null) {
+                                    multiset = HashMultiset.create();
+                                    map.put(tid, multiset);
+                                }
+                                Integer tjid = dict.get(tokens.get(j));
+                                if (tjid == null) {
+                                    tjid = id;
+                                    dict.put(tokens.get(j), tjid);
+                                    id++;
+                                }
+                                multiset.add(tjid);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return new OccOutput(map, dict);
+    }
+
     /**
      * Build the co-occurrences matrix
      *
@@ -242,7 +306,12 @@ public class BuildOccurrence {
         logger.log(Level.INFO, "To year: {0}", maxYear);
         for (int k = minYear; k <= maxYear; k++) {
             logger.log(Level.INFO, "Counting year: {0}", k);
-            OccOutput count = count(startingDir, k);
+            OccOutput count = null;
+            if (extractor != null) {
+                count = count(startingDir, k);
+            } else if (itExtractor != null) {
+                count = countIterable(startingDir, k);
+            }
             save(count, k);
         }
     }
@@ -286,12 +355,18 @@ public class BuildOccurrence {
             CommandLine cmd = cmdParser.parse(options, args);
             if (cmd.hasOption("c") && cmd.hasOption("o") && cmd.hasOption("e")) {
                 try {
-                    Extractor extractor = (Extractor) Class.forName("di.uniba.it.tri.extractor." + cmd.getOptionValue("e")).newInstance();
+                    Object classExtractor = Class.forName("di.uniba.it.tri.extractor." + cmd.getOptionValue("e")).newInstance();
                     TriTokenizer tokenizer = (TriTokenizer) Class.forName("di.uniba.it.tri.tokenizer." + cmd.getOptionValue("t", "TriStandardTokenizer")).newInstance();
                     BuildOccurrence builder = new BuildOccurrence();
                     builder.setOutputDir(new File(cmd.getOptionValue("o")));
                     builder.setWinsize(Integer.parseInt(cmd.getOptionValue("w", "5")));
-                    builder.setExtractor(extractor);
+                    if (classExtractor instanceof Extractor) {
+                        builder.setExtractor((Extractor) classExtractor);
+                    } else if (classExtractor instanceof IterableExtractor) {
+                        builder.setItExtractor((IterableExtractor) classExtractor);
+                    } else {
+                        throw new IllegalArgumentException("No valid extractor");
+                    }
                     builder.setTokenizer(tokenizer);
                     builder.setFilenameRegExp(cmd.getOptionValue("r", "^.+$"));
                     builder.process(new File(cmd.getOptionValue("c")), tokenizer);
