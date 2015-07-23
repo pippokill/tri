@@ -78,8 +78,6 @@ public class SpaceBuilder {
 
     private int size = 100000;
 
-    private int maxNoAplhaChar = 1;
-
     private final Pattern noaPattern = Pattern.compile("^.+_+$");
 
     /**
@@ -148,22 +146,6 @@ public class SpaceBuilder {
      *
      * @return
      */
-    public int getMaxNoAplhaChar() {
-        return maxNoAplhaChar;
-    }
-
-    /**
-     *
-     * @param maxNoAplhaChar
-     */
-    public void setMaxNoAplhaChar(int maxNoAplhaChar) {
-        this.maxNoAplhaChar = maxNoAplhaChar;
-    }
-
-    /**
-     *
-     * @return
-     */
     public File getStartingDir() {
         return startingDir;
     }
@@ -222,7 +204,7 @@ public class SpaceBuilder {
             String[] split;
             while (reader.ready()) {
                 split = reader.readLine().split("\t");
-                String token = cleanToken(split[0]);
+                String token = split[0];
                 if (token != null && elementalSpace.containsKey(token)) {
                     Vector v = VectorFactory.createZeroVector(VectorType.REAL, dimension);
                     int i = 1;
@@ -236,7 +218,7 @@ public class SpaceBuilder {
                     i = 1;
                     double t = 1 / totOcc;
                     while (i < split.length) {
-                        String word = cleanToken(split[i]);
+                        String word = split[i];
                         if (word != null) {
                             i++;
                             double weight = Math.sqrt(t / (Double.parseDouble(split[i]) / totOcc));
@@ -272,7 +254,7 @@ public class SpaceBuilder {
             BufferedReader reader = new BufferedReader(new FileReader(file));
             while (reader.ready()) {
                 String[] split = reader.readLine().split("\t");
-                String token = cleanToken(split[0]);
+                String token = split[0];
                 if (token != null) {
                     DictionaryEntry entry = dict.get(split[0]);
                     if (entry == null) {
@@ -335,20 +317,4 @@ public class SpaceBuilder {
             Logger.getLogger(SpaceBuilder.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-
-    private String cleanToken(String token) {
-        //token ends with a sequence of '_'?
-        token = token.replaceAll("^.+_+$", "");
-        //token starts with a sequence of '_'?
-        token = token.replaceAll("^_+.+$", "");
-        if (token.length() == 0) {
-            return null;
-        }
-        if (noaPattern.matcher(token).groupCount() > maxNoAplhaChar) {
-            return null;
-        } else {
-            return token;
-        }
-    }
-
 }

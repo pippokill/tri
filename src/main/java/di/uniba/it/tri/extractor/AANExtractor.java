@@ -13,6 +13,7 @@ import java.io.StringReader;
 
 /**
  * Extract textual content from a paper in the AAN corpus
+ *
  * @author pierpaolo
  */
 public class AANExtractor implements Extractor {
@@ -21,15 +22,16 @@ public class AANExtractor implements Extractor {
     public StringReader extract(File txtfile) throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(txtfile));
         StringBuilder sb = new StringBuilder();
-        while (reader.ready()) {
-            sb.append(reader.readLine()).append("\n");
+        boolean exit = false;
+        while (reader.ready() && !exit) {
+            String line = reader.readLine();
+            if (line.contains("References") || line.contains("Bibliography")) {
+                exit = true;
+            } else {
+                sb.append(line).append("\n");
+            }
         }
         reader.close();
-        //remove reference
-        int l = sb.indexOf("References");
-        if (l >= 0) {
-            sb = sb.delete(l, sb.length());
-        }
         return new StringReader(sb.toString());
     }
 

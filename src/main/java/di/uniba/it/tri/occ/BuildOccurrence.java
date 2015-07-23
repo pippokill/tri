@@ -41,6 +41,8 @@ import com.google.common.collect.Multiset;
 import com.google.common.collect.Multiset.Entry;
 import di.uniba.it.tri.extractor.Extractor;
 import di.uniba.it.tri.extractor.IterableExtractor;
+import di.uniba.it.tri.tokenizer.Filter;
+import di.uniba.it.tri.tokenizer.StopWordFilter;
 import di.uniba.it.tri.tokenizer.TriTokenizer;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -76,6 +78,10 @@ public class BuildOccurrence {
     private Extractor extractor = null;
 
     private IterableExtractor itExtractor = null;
+
+    private Filter filter = null;
+
+    private Filter swFilter = null;
 
     private TriTokenizer tokenizer;
 
@@ -189,7 +195,23 @@ public class BuildOccurrence {
         this.tokenizer = tokenizer;
     }
 
-    private OccOutput count(File startingDir, int year) throws IOException {
+    public Filter getFilter() {
+        return filter;
+    }
+
+    public void setFilter(Filter filter) {
+        this.filter = filter;
+    }
+
+    public Filter getSwFilter() {
+        return swFilter;
+    }
+
+    public void setSwFilter(Filter swFilter) {
+        this.swFilter = swFilter;
+    }
+
+    private OccOutput count(File startingDir, int year) throws Exception {
         Map<Integer, Multiset<Integer>> map = new HashMap<>();
         BiMap<String, Integer> dict = HashBiMap.create();
         int id = 0;
@@ -199,6 +221,12 @@ public class BuildOccurrence {
                 logger.log(Level.INFO, "Working file: {0}", file.getName());
                 StringReader reader = extractor.extract(file);
                 List<String> tokens = tokenizer.getTokens(reader);
+                if (swFilter != null) {
+                    swFilter.filter(tokens);
+                }
+                if (filter != null) {
+                    filter.filter(tokens);
+                }
                 for (int i = 0; i < tokens.size(); i++) {
                     int start = Math.max(0, i - winsize);
                     int end = Math.min(tokens.size() - 1, i + winsize);
@@ -230,7 +258,7 @@ public class BuildOccurrence {
         return new OccOutput(map, dict);
     }
 
-    private OccOutput countIterable(File startingDir, int year) throws IOException {
+    private OccOutput countIterable(File startingDir, int year) throws Exception {
         Map<Integer, Multiset<Integer>> map = new HashMap<>();
         BiMap<String, Integer> dict = HashBiMap.create();
         int id = 0;
@@ -241,6 +269,12 @@ public class BuildOccurrence {
                 itExtractor.extract(file);
                 while (itExtractor.hasNext()) {
                     List<String> tokens = tokenizer.getTokens(itExtractor.next());
+                    if (swFilter != null) {
+                        swFilter.filter(tokens);
+                    }
+                    if (filter != null) {
+                        filter.filter(tokens);
+                    }
                     for (int i = 0; i < tokens.size(); i++) {
                         int start = Math.max(0, i - winsize);
                         int end = Math.min(tokens.size() - 1, i + winsize);
@@ -278,10 +312,9 @@ public class BuildOccurrence {
      *
      * @param startingDir The corpus directory containing files with year
      * metadata
-     * @param tokenizer The tokenizer used to extract tokens
      * @throws Exception
      */
-    public void process(File startingDir, TriTokenizer tokenizer) throws Exception {
+    public void process(File startingDir) throws Exception {
         logger.log(Level.INFO, "Starting dir: {0}", startingDir.getAbsolutePath());
         logger.log(Level.INFO, "Output dir: {0}", outputDir.getAbsolutePath());
         logger.log(Level.INFO, "Window size: {0}", winsize);
@@ -312,7 +345,9 @@ public class BuildOccurrence {
             } else if (itExtractor != null) {
                 count = countIterable(startingDir, k);
             }
-            save(count, k);
+            if (count.getOcc().size() > 0) {
+                save(count, k);
+            }
         }
     }
 
@@ -342,7 +377,9 @@ public class BuildOccurrence {
                 .addOption("w", true, "The window size used to compute the co-occurrences (optional, default 5)")
                 .addOption("e", true, "The class used to extract the content from files")
                 .addOption("t", true, "The class used to tokenize the content (optional, defaul StandardTokenizer)")
-                .addOption("r", true, "Regular expression used to fetch files (optional, default \".+\")");
+                .addOption("r", true, "Regular expression used to fetch files (optional, default \".+\")")
+                .addOption("s", true, "Stop word file (optional)")
+                .addOption("f", true, "Filter class (optional)");
     }
 
     /**
@@ -368,8 +405,18 @@ public class BuildOccurrence {
                         throw new IllegalArgumentException("No valid extractor");
                     }
                     builder.setTokenizer(tokenizer);
+                    if (cmd.hasOption("s")) {
+                        logger.info("Load stop word...");
+                        builder.setSwFilter(new StopWordFilter(OccUtils.loadSet(new File(cmd.getOptionValue("s")))));
+                    }
+                    if (cmd.hasOption("f")) {
+                        logger.info("Load filter...");
+                        Filter filter = (Filter) Class.forName("di.uniba.it.tri.tokenizer." + cmd.getOptionValue("f")).newInstance();
+                        builder.setFilter(filter);
+                    }
                     builder.setFilenameRegExp(cmd.getOptionValue("r", "^.+$"));
-                    builder.process(new File(cmd.getOptionValue("c")), tokenizer);
+
+                    builder.process(new File(cmd.getOptionValue("c")));
                 } catch (Exception ex) {
                     logger.log(Level.SEVERE, null, ex);
                 }
