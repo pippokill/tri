@@ -72,7 +72,7 @@ public class FileVectorReader implements VectorReader {
      */
     public void init() throws IOException {
         DataInputStream inputStream = new DataInputStream(new BufferedInputStream(new FileInputStream(inputFile)));
-        logger.log(Level.INFO, "Init vector store: {0}", inputFile.getAbsolutePath());
+        //logger.log(Level.INFO, "Init vector store: {0}", inputFile.getAbsolutePath());
         Properties props = VectorStoreUtils.readHeader(inputStream.readUTF());
         dimension = Integer.parseInt(props.getProperty("-dim"));
         inputStream.close();

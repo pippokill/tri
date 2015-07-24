@@ -37,6 +37,7 @@ package di.uniba.it.tri;
 import di.uniba.it.tri.shell.TriShell;
 import di.uniba.it.tri.vectors.FileVectorReader;
 import di.uniba.it.tri.vectors.MapVectorReader;
+import di.uniba.it.tri.vectors.MemoryVectorReader;
 import di.uniba.it.tri.vectors.ObjectVector;
 import di.uniba.it.tri.vectors.ReverseObjectVectorComparator;
 import di.uniba.it.tri.vectors.Vector;
@@ -390,6 +391,41 @@ public class TemporalSpaceUtils {
      */
     public static File getVectorFile(File startDir, String year) {
         return new File(startDir.getAbsolutePath() + "/count_" + year + ".vectors");
+    }
+    
+    /**
+     * Get the VectorReader in which vectors of a specified year are stored
+     *
+     * @param startDir The directory containing the WordSpaces
+     * @param year The year
+     * @param mem
+     * @return The file
+     * @throws java.io.IOException
+     */
+    public static VectorReader getVectorReader(File startDir, String year, boolean mem) throws IOException {
+        File file = getVectorFile(startDir, year);
+        VectorReader vr;
+        if (mem) {
+            vr = new MemoryVectorReader(file);
+            vr.init();
+        } else {
+            vr = new FileVectorReader(file);
+            vr.init();
+        }
+        return vr;
+    }
+
+    /**
+     * Get the VectorReader in which vectors of a specified year are stored
+     *
+     * @param startDir The directory containing the WordSpaces
+     * @param year The year
+     * @param mem
+     * @return The file
+     * @throws java.io.IOException
+     */
+    public static VectorReader getVectorReader(File startDir, int year, boolean mem) throws IOException {
+        return getVectorReader(startDir, String.valueOf(year), mem);
     }
 
     /**

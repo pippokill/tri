@@ -60,7 +60,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.util.Version;
 
 /**
  * This class is used as the wrapper to interpret and execute commands from the
@@ -176,6 +175,8 @@ public class Command {
             count(command);
         } else if (command.matches("(^sims$)|(^sims\\s+.*$)")) {
             sims(command);
+        } else if (command.matches("(^plot$)|(^plot\\s+.*$)")) {
+            plot(command);
         } else {
             throw new Exception("Unknown command: " + command);
         }
@@ -277,6 +278,7 @@ public class Command {
             String[] split = cmd.split("\\s+");
             if (split.length == 1) {
                 List<String> availableYears = TemporalSpaceUtils.getAvailableYears(mainDir, -Integer.MAX_VALUE, Integer.MAX_VALUE);
+                Collections.sort(availableYears);
                 for (String year : availableYears) {
                     TriShell.print(year);
                     TriShell.print(" ");
@@ -286,6 +288,7 @@ public class Command {
                 int start = Integer.parseInt(split[1]);
                 int end = Integer.parseInt(split[2]);
                 List<String> availableYears = TemporalSpaceUtils.getAvailableYears(mainDir, start, end);
+                Collections.sort(availableYears);
                 for (String year : availableYears) {
                     TriShell.print(year);
                     TriShell.print(" ");
@@ -874,6 +877,86 @@ public class Command {
         }
     }
 
+    private void plot(String cmd) throws Exception {
+        if (mainDir == null) {
+            throw new Exception("No main dir set");
+        }
+        String[] split = cmd.split("\\s+");
+        if (split.length > 2) {
+            if (split[1].equals("word")) {
+                List<String> availableYears = TemporalSpaceUtils.getAvailableYears(mainDir, -Integer.MAX_VALUE, Integer.MAX_VALUE);
+                Collections.sort(availableYears);
+                if (!availableYears.isEmpty()) {
+                    TriShell.print("year");
+                    for (int i = 2; i < split.length; i++) {
+                        TriShell.print("\t" + split[i]);
+                    }
+                    TriShell.println("");
+                }
+                //just read vector dimension
+                VectorReader vrd = TemporalSpaceUtils.getVectorReader(mainDir, availableYears.get(0), false);
+                vrd.init();
+                int dimension = vrd.getDimension();
+                vrd.close();
+                List<Vector> precv = new ArrayList<>();
+                for (int i = 2; i < split.length; i++) {
+                    precv.add(VectorFactory.createZeroVector(VectorType.REAL, dimension));
+                }
+                for (String ys : availableYears) {
+                    TriShell.print(ys);
+                    VectorReader vr = TemporalSpaceUtils.getVectorReader(mainDir, ys, false);
+                    for (int i = 2; i < split.length; i++) {
+                        Vector v = vr.getVector(split[i]);
+                        if (v != null) {
+                            Vector copy = precv.get(i - 2).copy();
+                            copy.superpose(v, 1, null);
+                            copy.normalize();
+                            TriShell.print("\t" + copy.measureOverlap(precv.get(i - 2)));
+                            precv.get(i - 2).superpose(v, 1, null);
+                            precv.get(i - 2).normalize();
+                        } else {
+                            TriShell.print("\tNA");
+                        }
+                    }
+                    TriShell.println("");
+                    vr.close();
+                }
+            } else if (split[1].equals("words") && split.length > 3) {
+                List<String> availableYears = TemporalSpaceUtils.getAvailableYears(mainDir, -Integer.MAX_VALUE, Integer.MAX_VALUE);
+                Collections.sort(availableYears);
+                if (!availableYears.isEmpty()) {
+                    TriShell.println("year\t" + split[2] + "-" + split[3]);
+                }
+                //just read vector dimension
+                VectorReader vrd = TemporalSpaceUtils.getVectorReader(mainDir, availableYears.get(0), false);
+                vrd.init();
+                int dimension = vrd.getDimension();
+                vrd.close();
+                Vector v1 = VectorFactory.createZeroVector(VectorType.REAL, dimension);
+                Vector v2 = VectorFactory.createZeroVector(VectorType.REAL, dimension);
+                for (String ys : availableYears) {
+                    TriShell.print(ys);
+                    VectorReader vr = TemporalSpaceUtils.getVectorReader(mainDir, ys, false);
+                    vr.init();
+                    Vector v = vr.getVector(split[2]);
+                    if (v != null) {
+                        v1.superpose(v, 1, null);
+                        v1.normalize();
+                    }
+                    v = vr.getVector(split[3]);
+                    if (v != null) {
+                        v2.superpose(v, 1, null);
+                        v2.normalize();
+                    }
+                    TriShell.println("\t" + v1.measureOverlap(v2));
+                    vr.close();
+                }
+            } else {
+                throw new Exception("No valid plot command");
+            }
+        }
+    }
+
     private void initHelp() {
         help.setProperty("set", "set <main dir> - set the main directory in which WordSpaces are stored");
         help.setProperty("index", "index <file|mem> <name> - create a words index from a vector reader using a filename (file) or a previous reader loaded in memory (mem)");
@@ -902,6 +985,7 @@ public class Command {
         help.setProperty("sset", "sset <name> <number of results> <query> - search in the words index and save results in a set");
         help.setProperty("pset", "pset <name> print set");
         help.setProperty("vset", "vset <vector reader name> <set name> <vector name> - convert a set into a vector fetching vectors from the vector reader");
+        help.setProperty("plot", "plot word (word)+ OR plot words word1 word2 - 'plot word' plots meaning variation over the time for all the (word)+, while 'plot words' plots similarity between word1 and word2 over the time");
 
     }
 

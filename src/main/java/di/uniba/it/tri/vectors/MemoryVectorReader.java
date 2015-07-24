@@ -75,7 +75,7 @@ public class MemoryVectorReader implements VectorReader {
     public void init() throws IOException {
         memory.clear();
         DataInputStream inputStream = new DataInputStream(new BufferedInputStream(new FileInputStream(inputFile)));
-        logger.log(Level.INFO, "Loading vector store: {0}", inputFile.getAbsolutePath());
+        //logger.log(Level.INFO, "Loading vector store: {0}", inputFile.getAbsolutePath());
         Properties props = VectorStoreUtils.readHeader(inputStream.readUTF());
         dimension = Integer.parseInt(props.getProperty("-dim"));
         while (inputStream.available() > 0) {
@@ -85,7 +85,7 @@ public class MemoryVectorReader implements VectorReader {
             memory.put(key, vector);
         }
         inputStream.close();
-        logger.log(Level.INFO, "Total vectors: {0}", memory.size());
+        //logger.log(Level.INFO, "Total vectors: {0}", memory.size());
     }
 
     /**
