@@ -38,7 +38,7 @@ Prepare the corpus:
 
 1.	Create a directory for the corpus
 2.	Copy all documents in the directory, each document must contain the information about the publication year in this format: filename\_year, for example *myfile\_1981*
-3.	Run the class **di.uniba.it.tri.occ.BuildOccurrence** with the parameters: *corpusDir* *outputOccDir* *windowSize* *extractor\_class* *regular expression used to filter filenames*. The *corpusDir* is the corpus directory (step 1), *outputOccDir* is the directory in which information about co-occurrences will be stored. The *extractor\_class* is the name of the class used to extract text from files. This class must implement the interface: *di.uniba.it.tri.extractor.Extractor*. Three extractors are implemented: *GutenbergExtractor* for the Gutenberg Project; *AANExtractor* for the AAN corpus; and *TxtExtractor* for plain text files.
+3.	Run the class **di.uniba.it.tri.occ.BuildOccurrence** with the parameters: *corpusDir* *outputOccDir* *windowSize* *extractor\_class* *regular expression used to filter filenames*. The *corpusDir* is the corpus directory (step 1), *outputOccDir* is the directory in which information about co-occurrences will be stored. The *extractor\_class* is the name of the class used to extract text from files. This class must implement the interface: *di.uniba.it.tri.extractor.Extractor*. Four extractors are implemented: *GutenbergExtractor* for the Gutenberg Project; *AANExtractor* for the AAN corpus; *TxtExtractor* for plain text files; and *TextFileIterableExtractor* for txt file containing one document for each line. You can specify both a tokenizer and/or a token filter. The tokenizer must implement the *di.uniba.it.tri.tokenizer.TriTokenizer* interface, while the filter must implement the *di.uniba.it.tri.tokenizer.Filter* interface. Both filters and tokenizers must be placed in the *di.uniba.it.tri.tokenizer* package.
 
 Build the WordSpaces:
 1.	Run the class **di.uniba.it.tri.space.SpaceBuilder** with the arguments: *outputOccDir* *outputSpaceDir* *dimension* *seed* *dictionarySize*. The *outputOccDir* is the directory of co-occurrences, *outputSpaceDir* is the directory in which WordSpaces will be stored, *dimension* and *seed* are Random Indexing parameters (1000 and 20 are good values), and the dictionarySize is the number of terms considered into the vocabulary (the most frequent terms are considered).
@@ -59,8 +59,11 @@ usage: Run the TRI shell<br>
 usage: Build the co-occurrences matrices given the set of files with the year of publication [-c <arg>] [-e <arg>] [-o <arg>] [-r <arg>] [-w <arg>]<br>
  -c <arg>   The corpus directory containing files with the year of publication<br>
  -e <arg>   The class used to extract the content from files<br>
+ -f <arg>   Filter class (optional)<br>
  -o <arg>   Output directory where the output will be stored<br>
  -r <arg>   Regular expression used to fetch files (optional, default ".+")<br>
+ -s <arg>   Stop word file (optional)<br>
+ -t <arg>   The class used to tokenize the content (optional, default StandardTokenizer)<br>
  -w <arg>   The window size used to compute the co-occurrences (optional, default 5)
 
 **di.uniba.it.tri.space.SpaceBuilder**

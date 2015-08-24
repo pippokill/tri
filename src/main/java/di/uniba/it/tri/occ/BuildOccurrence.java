@@ -376,7 +376,7 @@ public class BuildOccurrence {
                 .addOption("o", true, "Output directory where output will be stored")
                 .addOption("w", true, "The window size used to compute the co-occurrences (optional, default 5)")
                 .addOption("e", true, "The class used to extract the content from files")
-                .addOption("t", true, "The class used to tokenize the content (optional, defaul StandardTokenizer)")
+                .addOption("t", true, "The class used to tokenize the content (optional, default StandardTokenizer)")
                 .addOption("r", true, "Regular expression used to fetch files (optional, default \".+\")")
                 .addOption("s", true, "Stop word file (optional)")
                 .addOption("f", true, "Filter class (optional)");
