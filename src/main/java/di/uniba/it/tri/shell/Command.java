@@ -67,14 +67,13 @@ import org.apache.lucene.search.TopDocs;
  *
  * @author pierpaolo
  */
+@Deprecated
 public class Command {
 
     private File mainDir;
 
     private IndexReader reader;
-
-    //public static int MAX_SEARCH_RESULTS = 10;
-    //public static int MAX_NEAR_VECTORS = 25;
+    
     private static final String ELEMENTAL_NAME = "*elemental*";
 
     private static final QueryParser parser = new QueryParser("word", new StandardAnalyzer(CharArraySet.EMPTY_SET));
@@ -268,7 +267,7 @@ public class Command {
         }
     }
 
-    //list available yeaar
+    //list available year
     private void year(String cmd) throws Exception {
         if (mainDir == null) {
             throw new Exception("Main dir not set");
@@ -462,7 +461,7 @@ public class Command {
 
     private void addv(String cmd) throws Exception {
         String[] split = cmd.split("\\s+");
-        if (split.length > 3) {
+        if (split.length > 2) {
             int dimension = -1;
             for (int i = 2; i < split.length; i++) {
                 Vector v = vectors.get(split[i]);
@@ -967,7 +966,7 @@ public class Command {
         help.setProperty("clear", "clear <stores|vectors|index> <name>* - remove a vector reader (stores) or a vector (vectors) or the index. If no name is provided all the elements are removed");
         help.setProperty("get", "get <vector reader name> <vector name> <word> - get the word vector from the vector reader and store it in memory using the vector name");
         help.setProperty("add", "add <vector reader name> <vector name> <word>+ - get and sum multiple word vectors from the vector reader and store the result in memory using the vector name");
-        help.setProperty("addv", "addv <vector reader name> <vector name> <vectors>+ - get and sum multiple vectors in memory and store the result in memory using the vector name");
+        help.setProperty("addv", "addv <vector name> <vectors>+ - get and sum multiple vectors in memory and store the result in memory using the vector name");
         help.setProperty("near", "near <number of results> <vector reader name> <vector name> - print nearest vectors");
         help.setProperty("sim", "sim <vector name 1> <vector name 2> - print vectors similarity");
         help.setProperty("count", "count <vector reader name> - return the number of vectors in the vector reader");

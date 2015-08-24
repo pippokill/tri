@@ -61,7 +61,7 @@ public class TriShell {
     private InputStream in = System.in;
     private BufferedReader reader;
     private final List<String> history = new ArrayList();
-    private Command command;
+    private CommandWrapper command;
 
     /**
      *
@@ -89,7 +89,7 @@ public class TriShell {
      * @return The class used as the wrapper to interpret and execute commands
      * from the shell
      */
-    public Command getCommand() {
+    public CommandWrapper getCommandWrapper() {
         return command;
     }
 
@@ -100,7 +100,7 @@ public class TriShell {
      * @param command The class used as the wrapper to interpret and execute
      * commands from the shell
      */
-    public void setCommand(Command command) {
+    public void setCommandWrapper(CommandWrapper command) {
         this.command = command;
     }
 
@@ -142,8 +142,8 @@ public class TriShell {
             } else {
                 shell = new TriShell();
             }
-            Command command = new Command();
-            shell.setCommand(command);
+            CommandWrapper command = new CommandWrapper();
+            shell.setCommandWrapper(command);
             shell.promptLoop();
         } catch (ParseException ex) {
             Logger.getLogger(TriShell.class.getName()).log(Level.SEVERE, null, ex);
