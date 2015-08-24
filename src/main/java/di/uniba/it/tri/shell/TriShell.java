@@ -66,7 +66,7 @@ public class TriShell {
     /**
      *
      */
-    public static final String VERSION = "0.20";
+    public static final String VERSION = "0.40";
     private String charset = "ISO-8859-1";
     /**
      * The output stream where this tool writes to.

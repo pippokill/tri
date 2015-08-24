@@ -985,6 +985,7 @@ public class Command {
         help.setProperty("sset", "sset <name> <number of results> <query> - search in the words index and save results in a set");
         help.setProperty("pset", "pset <name> print set");
         help.setProperty("vset", "vset <vector reader name> <set name> <vector name> - convert a set into a vector fetching vectors from the vector reader");
+        //plot command
         help.setProperty("plot", "plot word (word)+ OR plot words word1 word2 - 'plot word' plots meaning variation over the time for all the (word)+, while 'plot words' plots similarity between word1 and word2 over the time");
 
     }

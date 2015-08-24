@@ -1,4 +1,4 @@
-Temporal Random Indexing (v. 0.20 - 15/03/2015)
+Temporal Random Indexing (v. 0.40 - 24/08/2015)
 ===============================================
 
 General info
@@ -106,8 +106,8 @@ create a new temporal space combining spaces from the *start_year* to the *end_y
 **sim**	*vector_name1* *vector_name2*<br>
 compute cosine similarity between two vectors
 
-**sims** *number_of_results* *vector_reader_name1* *vector_reader_name2*<br>
-find words that change meaning between two WordSpaces
+**sims** *number of results* *vector reader name1* *vector reader name2* *min*? *max*?<br>
+find words that change meaning between two WordSpaces. *Min* and *max* are used as thresholds for filtering results (optional)
 
 **near** *number_of_results* *vector_reader_name* *vector_name*<br>
 print nearest vectors given the vector reader (*vector_reader_name*) and the word vector (*vector_name*)
@@ -130,10 +130,10 @@ return the number of vectors in the vector reader
 **list** *stores|vectors|sets*<br>
 list vector readers (*stores*) or *vectors* or *sets* stored in the memory
 
-**clear**	*stores|vectors|index* *name*\*<br>
+**clear** *stores|vectors|index* *name*\*<br>
 remove one or more vector readers (*stores*) or vectors (*vectors*) called *name* or the words index. If *name* is not provided all the elements are removed
 
-**cset**	*name*<br>
+**cset** *name*<br>
 create a new set of words called *name*
 
 **aset** *name* *word*+<br>
@@ -153,6 +153,9 @@ convert a set of words called *set_name* into a vector (*vector_name*) fetching 
 
 **sset** *name* *number_of_results* *query*<br>
 search in the words index and save results in a set called *name*
+
+**plot word** *word*+ OR **plot words** *word1* *word2*<br>
+**plot word** plots meaning variation over the time for all the *word*+, while **plot words** plots similarity between *word1* and *word2* over the time
 
 Contacts
 --------
