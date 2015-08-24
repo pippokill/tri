@@ -87,9 +87,7 @@ public class Command {
 
     private final Properties help = new Properties();
 
-    private static final String vs = "|";
-
-    private static final String os = "-";
+    private static final String VS_SEPARATOR = "|";
 
     /**
      *
@@ -690,7 +688,7 @@ public class Command {
             List<ObjectVector> n2 = TemporalSpaceUtils.getNearestVectors(vr2, v2, Integer.parseInt(split[1]));
             int size = Math.min(n1.size(), n2.size());
             for (int k = 0; k < size; k++) {
-                TriShell.println(n1.get(k).getKey() + "\t" + n1.get(k).getScore() + " " + vs + " "
+                TriShell.println(n1.get(k).getKey() + "\t" + n1.get(k).getScore() + " " + VS_SEPARATOR + " "
                         + n2.get(k).getKey() + "\t" + n2.get(k).getScore());
             }
         } else {
