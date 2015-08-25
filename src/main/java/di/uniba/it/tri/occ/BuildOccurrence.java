@@ -379,12 +379,15 @@ public class BuildOccurrence {
         Iterator<String> keys = count.getDict().keySet().iterator();
         while (keys.hasNext()) {
             String key = keys.next();
-            writer.append(key);
-            Set<Multiset.Entry<Integer>> entrySet = count.getOcc().get(count.getDict().get(key)).entrySet();
-            for (Entry<Integer> entry : entrySet) {
-                writer.append("\t").append(count.getDict().inverse().get(entry.getElement())).append("\t").append(String.valueOf(entry.getCount()));
+            Multiset<Integer> mset = count.getOcc().get(count.getDict().get(key));
+            if (mset != null) {
+                writer.append(key);
+                Set<Multiset.Entry<Integer>> entrySet = mset.entrySet();
+                for (Entry<Integer> entry : entrySet) {
+                    writer.append("\t").append(count.getDict().inverse().get(entry.getElement())).append("\t").append(String.valueOf(entry.getCount()));
+                }
+                writer.newLine();
             }
-            writer.newLine();
         }
         writer.close();
     }
