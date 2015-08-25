@@ -46,8 +46,10 @@ import di.uniba.it.tri.tokenizer.StopWordFilter;
 import di.uniba.it.tri.tokenizer.TriTokenizer;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -56,6 +58,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.GZIPOutputStream;
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -372,7 +375,7 @@ public class BuildOccurrence {
     }
 
     private void save(OccOutput count, int year) throws IOException {
-        BufferedWriter writer = new BufferedWriter(new FileWriter(outputDir.getAbsolutePath() + "/count_" + year));
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outputDir.getAbsolutePath() + "/count_" + year))));
         Iterator<String> keys = count.getDict().keySet().iterator();
         while (keys.hasNext()) {
             String key = keys.next();

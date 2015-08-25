@@ -43,9 +43,11 @@ import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -55,6 +57,7 @@ import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -197,7 +200,7 @@ public class SpaceBuilder {
         File[] listFiles = startingDir.listFiles();
         for (File file : listFiles) {
             logger.log(Level.INFO, "Space: {0}", file.getAbsolutePath());
-            BufferedReader reader = new BufferedReader(new FileReader(file));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))));
             DataOutputStream outputStream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(outputDir.getAbsolutePath() + "/" + file.getName() + ".vectors")));
             String header = VectorStoreUtils.createHeader(VectorType.REAL, dimension, seed);
             outputStream.writeUTF(header);
@@ -251,7 +254,7 @@ public class SpaceBuilder {
         File[] listFiles = startingDir.listFiles();
         for (File file : listFiles) {
             logger.log(Level.INFO, "Working on file: {0}", file.getName());
-            BufferedReader reader = new BufferedReader(new FileReader(file));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))));
             while (reader.ready()) {
                 String[] split = reader.readLine().split("\t");
                 String token = split[0];
