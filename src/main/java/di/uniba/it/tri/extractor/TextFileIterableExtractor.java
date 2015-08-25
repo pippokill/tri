@@ -21,8 +21,11 @@ public class TextFileIterableExtractor implements IterableExtractor {
 
     private BufferedReader reader;
 
+    private int counter = 0;
+
     @Override
     public void extract(File file) throws IOException {
+        counter = 0;
         if (reader != null) {
             reader.close();
         } else {
@@ -45,6 +48,13 @@ public class TextFileIterableExtractor implements IterableExtractor {
 
     @Override
     public String next() throws IOException {
+        counter++;
+        if (counter % 100 == 0) {
+            System.out.print(".");
+            if (counter % 10000 == 0) {
+                System.out.println("." + counter);
+            }
+        }
         return reader.readLine();
     }
 
