@@ -28,12 +28,11 @@ public class TextFileIterableExtractor implements IterableExtractor {
         counter = 0;
         if (reader != null) {
             reader.close();
+        }
+        if (file.getName().endsWith(".gz")) {
+            reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))));
         } else {
-            if (file.getName().endsWith(".gz")) {
-                reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))));
-            } else {
-                reader = new BufferedReader(new FileReader(file));
-            }
+            reader = new BufferedReader(new FileReader(file));
         }
     }
 
