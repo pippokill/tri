@@ -217,7 +217,14 @@ public class BuildOccurrence {
         int id = 0;
         File[] listFiles = startingDir.listFiles();
         for (File file : listFiles) {
-            if (file.getName().matches(filenameRegExp) && file.getName().lastIndexOf("_") > -1 && file.getName().endsWith(String.valueOf(year))) {
+            int eindex = file.getName().lastIndexOf(".");
+            String filename;
+            if (eindex < 0) {
+                filename = file.getName();
+            } else {
+                filename = file.getName().substring(0, eindex);
+            }
+            if (filename.matches(filenameRegExp) && filename.lastIndexOf("_") > -1 && filename.endsWith(String.valueOf(year))) {
                 logger.log(Level.INFO, "Working file: {0}", file.getName());
                 StringReader reader = extractor.extract(file);
                 List<String> tokens = tokenizer.getTokens(reader);
@@ -264,7 +271,14 @@ public class BuildOccurrence {
         int id = 0;
         File[] listFiles = startingDir.listFiles();
         for (File file : listFiles) {
-            if (file.getName().matches(filenameRegExp) && file.getName().lastIndexOf("_") > -1 && file.getName().endsWith(String.valueOf(year))) {
+            int eindex = file.getName().lastIndexOf(".");
+            String filename;
+            if (eindex < 0) {
+                filename = file.getName();
+            } else {
+                filename = file.getName().substring(0, eindex);
+            }
+            if (filename.matches(filenameRegExp) && filename.lastIndexOf("_") > -1 && filename.endsWith(String.valueOf(year))) {
                 logger.log(Level.INFO, "Working file: {0}", file.getName());
                 itExtractor.extract(file);
                 while (itExtractor.hasNext()) {
@@ -324,9 +338,15 @@ public class BuildOccurrence {
         for (File file : listFiles) {
             int i = file.getName().lastIndexOf("_");
             if (i > -1 && file.getName().substring(0, i).matches(filenameRegExp)) {
-                //fix year to consider only the last 4 chars
-                //old year int year = Integer.parseInt(file.getName().substring(i + 1));
-                int year = Integer.parseInt(file.getName().substring(file.getName().length() - 4, file.getName().length()));
+                //fix year to consider only the last 4 chars, expect file extension
+                int eindex = file.getName().lastIndexOf(".");
+                String filename;
+                if (eindex < 0) {
+                    filename = file.getName();
+                } else {
+                    filename = file.getName().substring(0, eindex);
+                }
+                int year = Integer.parseInt(filename.substring(filename.length() - 4, filename.length()));
                 if (year < minYear) {
                     minYear = year;
                 }
