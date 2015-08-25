@@ -8,6 +8,7 @@ package di.uniba.it.tri.tokenizer;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -30,7 +31,18 @@ public class TriTwitterTokenizer implements TriTokenizer {
 
     @Override
     public List<String> getTokens(String text) throws IOException {
-        return Twokenize.tokenize(text);
+        List<String> tokens=Twokenize.tokenize(text);
+        List<String> newTokens=new ArrayList<>(tokens.size());
+        for(String s:tokens) {
+            if (s.startsWith("http://") || s.startsWith("https://")) {
+                newTokens.add("_URL_");
+            } else if (s.startsWith("@")) {
+                newTokens.add("_USR_");
+            } else {
+                newTokens.add(s.toLowerCase());
+            }
+        }
+        return newTokens;
     }
 
 }
