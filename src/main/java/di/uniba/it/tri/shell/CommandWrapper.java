@@ -573,7 +573,10 @@ public class CommandWrapper {
                 min = Double.parseDouble(split[4]);
                 max = Double.parseDouble(split[5]);
             }
-            tri.sims(split[2], split[3], Integer.parseInt(split[1]), min, max);
+            List<ObjectVector> sims = tri.sims(split[2], split[3], Integer.parseInt(split[1]), min, max);
+            for (ObjectVector ov : sims) {
+                TriShell.println(ov.getKey() + "\t" + ov.getScore());
+            }
         } else {
             throw new Exception("sims syntax error");
         }
@@ -591,6 +594,8 @@ public class CommandWrapper {
             } else {
                 throw new Exception("No valid plot command");
             }
+        } else {
+            throw new Exception("No valid plot command");
         }
     }
 

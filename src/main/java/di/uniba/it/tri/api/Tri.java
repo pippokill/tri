@@ -151,17 +151,12 @@ public class Tri {
     }
 
     //set main dir
-    public void setMaindir(String cmd) throws Exception {
-        String[] split = cmd.split("\\s+");
-        if (split.length > 1) {
-            File file = new File(split[1]);
-            if (file.isDirectory()) {
-                this.mainDir = file;
-            } else {
-                throw new Exception("Not valid directory: " + split[1]);
-            }
+    public void setMaindir(String mainDirname) throws Exception {
+        File file = new File(mainDirname);
+        if (file.isDirectory()) {
+            this.mainDir = file;
         } else {
-            throw new Exception("set syntax error");
+            throw new Exception("Not valid directory: " + mainDirname);
         }
     }
 
@@ -475,7 +470,7 @@ public class Tri {
                 throw new Exception("no set for: " + setname);
             }
             Query query = parser.parse(strQuery);
-            List<TriResultObject> list=new ArrayList<>();
+            List<TriResultObject> list = new ArrayList<>();
             IndexSearcher searcher = new IndexSearcher(reader);
             TopDocs topDocs = searcher.search(query, n);
             for (ScoreDoc scoreDoc : topDocs.scoreDocs) {

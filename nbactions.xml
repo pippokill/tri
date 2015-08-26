@@ -10,7 +10,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xmx6g -classpath %classpath di.uniba.it.tri.occ.BuildOccurrence -c /home/pierpaolo/dataset/tdsm/en/tri.sentiment/corpus/ -e TextFileIterableExtractor -o /home/pierpaolo/dataset/tdsm/en/tri.sentiment/occ/ -s /home/pierpaolo/Develop/Java/tri/resources/sw_en -t TriTwitterTokenizer</exec.args>
+                <exec.args>-Xmx4g -classpath %classpath di.uniba.it.tri.shell.TriShell -c "utf-8"</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>
@@ -24,7 +24,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -Xmx6g -classpath %classpath di.uniba.it.tri.occ.BuildOccurrence -c /home/pierpaolo/dataset/tdsm/en/tri.sentiment/corpus/ -e TextFileIterableExtractor -o /home/pierpaolo/dataset/tdsm/en/tri.sentiment/occ/ -s /home/pierpaolo/Develop/Java/tri/resources/sw_en -t TriTwitterTokenizer</exec.args>
+                <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -Xmx4g -classpath %classpath di.uniba.it.tri.shell.TriShell -c "utf-8"</exec.args>
                 <exec.executable>java</exec.executable>
                 <jpda.listen>true</jpda.listen>
             </properties>
@@ -39,7 +39,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xmx6g -classpath %classpath di.uniba.it.tri.occ.BuildOccurrence -c /home/pierpaolo/dataset/tdsm/en/tri.sentiment/corpus/ -e TextFileIterableExtractor -o /home/pierpaolo/dataset/tdsm/en/tri.sentiment/occ/ -s /home/pierpaolo/Develop/Java/tri/resources/sw_en -t TriTwitterTokenizer</exec.args>
+                <exec.args>-Xmx4g -classpath %classpath di.uniba.it.tri.shell.TriShell -c "utf-8"</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>
