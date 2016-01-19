@@ -11,12 +11,16 @@ import java.util.List;
  *
  * @author pierpaolo
  */
-public class StandardFilter implements Filter {
+public class LetterFilter implements Filter {
 
     @Override
     public void filter(List<String> tokens) throws Exception {
         for (int i = tokens.size() - 1; i >= 0; i--) {
-            if (tokens.get(i).matches("[^A-Za-z_0-9]+")) {
+            boolean remove = false;
+            for (int j = 0; j < tokens.get(i).length() && !remove; j++) {
+                remove = !Character.isLetter(tokens.get(i).charAt(j));
+            }
+            if (remove) {
                 tokens.remove(i);
             }
         }
