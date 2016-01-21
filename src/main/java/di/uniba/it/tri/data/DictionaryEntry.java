@@ -91,7 +91,7 @@ public class DictionaryEntry implements Comparable<DictionaryEntry> {
 
     @Override
     public int compareTo(DictionaryEntry o) {
-        return Integer.compare(o.counter, counter);
+        return Integer.compare(counter, o.counter);
     }
 
     @Override

@@ -47,15 +47,12 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
@@ -80,7 +77,19 @@ public class SpaceBuilder {
 
     private int size = 100000;
 
-    private final Pattern noaPattern = Pattern.compile("^.+_+$");
+    private double sample = 1e-3;
+
+    public double getSample() {
+        return sample;
+    }
+
+    public void setSample(double sample) {
+        this.sample = sample;
+    }
+
+    private long totalOcc = 0;
+
+    private Random randomDown;
 
     /**
      *
@@ -176,6 +185,15 @@ public class SpaceBuilder {
         this.size = size;
     }
 
+    private boolean subsampling(int wordCount) {
+        if (sample > 0) {
+            double pw = (Math.sqrt((double) wordCount / (sample * (double) totalOcc)) + 1) * (sample * (double) totalOcc) / (double) wordCount;
+            return pw < randomDown.nextDouble();
+        } else {
+            return false;
+        }
+    }
+
     /**
      *
      * @param outputDir
@@ -185,16 +203,19 @@ public class SpaceBuilder {
         if (!outputDir.exists()) {
             outputDir.mkdir();
         }
-        List<DictionaryEntry> dict = buildDictionary(startingDir, size);
+        Map<String, Integer> dict = buildDictionary(startingDir, size);
+        logger.log(Level.INFO, "Dictionary size {0}", dict.size());
         Map<String, Vector> elementalSpace = new HashMap<>();
         //create random vectors space
         logger.info("Building elemental vectors...");
+        totalOcc = 0;
         Random random = new Random();
-        for (DictionaryEntry entry : dict) {
-            elementalSpace.put(entry.getWord(), VectorFactory.generateRandomVector(VectorType.REAL, dimension, seed, random));
+        randomDown = new Random();
+        for (String word : dict.keySet()) {
+            elementalSpace.put(word, VectorFactory.generateRandomVector(VectorType.REAL, dimension, seed, random));
+            totalOcc += dict.get(word);
         }
-        dict.clear();
-        dict = null;
+        logger.log(Level.INFO, "Total occurrences {0}", totalOcc);
         logger.log(Level.INFO, "Building spaces: {0}", startingDir.getAbsolutePath());
         File[] listFiles = startingDir.listFiles();
         for (File file : listFiles) {
@@ -207,31 +228,23 @@ public class SpaceBuilder {
             while (reader.ready()) {
                 split = reader.readLine().split("\t");
                 String token = split[0];
-                if (token != null && elementalSpace.containsKey(token)) {
+                if (elementalSpace.containsKey(token)) {
                     Vector v = VectorFactory.createZeroVector(VectorType.REAL, dimension);
                     int i = 1;
-                    double totOcc = 0;
-                    while (i < split.length) {
-                        i++;
-                        double weight = Double.parseDouble(split[i]);
-                        i++;
-                        totOcc += weight;
-                    }
-                    i = 1;
-                    double t = 1 / totOcc;
                     while (i < split.length) {
                         String word = split[i];
-                        if (word != null) {
-                            i++;
-                            double weight = Math.sqrt(t / (Double.parseDouble(split[i]) / totOcc));
-                            i++;
-                            Vector rv = elementalSpace.get(word);
-                            if (rv != null) {
-                                v.superpose(rv, weight, null);
+                        Vector ev = elementalSpace.get(word);
+                        if (ev != null) {
+                            int coocc = Integer.parseInt(split[i + 1]);
+                            double w = 0;
+                            for (int k = 0; k < coocc; k++) {
+                                if (!subsampling(dict.get(word))) {
+                                    w++;
+                                }
                             }
-                        } else {
-                            i = i + 2;
+                            v.superpose(ev, w, null);
                         }
+                        i = i + 2;
                     }
                     if (!v.isZeroVector()) {
                         v.normalize();
@@ -247,9 +260,9 @@ public class SpaceBuilder {
         VectorStoreUtils.saveSpace(new File(outputDir.getAbsolutePath() + "/vectors.elemental"), elementalSpace, VectorType.REAL, dimension, seed);
     }
 
-    private List<DictionaryEntry> buildDictionary(File startingDir, int maxSize) throws IOException {
+    private Map<String, Integer> buildDictionary(File startingDir, int maxSize) throws IOException {
         logger.log(Level.INFO, "Building dictionary: {0}", startingDir.getAbsolutePath());
-        Map<String, DictionaryEntry> dict = new HashMap<>();
+        Map<String, Integer> cmap = new HashMap<>();
         File[] listFiles = startingDir.listFiles();
         for (File file : listFiles) {
             logger.log(Level.INFO, "Working on file: {0}", file.getName());
@@ -257,27 +270,36 @@ public class SpaceBuilder {
             while (reader.ready()) {
                 String[] split = reader.readLine().split("\t");
                 String token = split[0];
-                if (token != null) {
-                    DictionaryEntry entry = dict.get(split[0]);
-                    if (entry == null) {
-                        entry = new DictionaryEntry(split[0], 1);
-                        dict.put(entry.getWord(), entry);
-                    } else {
-                        entry.incrementCounter();
-                    }
+                int count = 0;
+                for (int i = 2; i < split.length; i = i + 2) {
+                    count += Integer.parseInt(split[i]);
+                }
+                Integer c = cmap.get(token);
+                if (c == null) {
+                    cmap.put(token, count);
+                } else {
+                    cmap.put(token, c + count);
                 }
             }
             reader.close();
         }
         logger.info("Sorting...");
-        List<DictionaryEntry> list = new ArrayList<>(dict.values());
-        logger.log(Level.INFO, "Total elements: {0}", list.size());
-        Collections.sort(list);
-        if (list.size() > maxSize) {
-            list = list.subList(0, maxSize);
+        PriorityQueue<DictionaryEntry> queue = new PriorityQueue<>();
+        for (Map.Entry<String, Integer> e : cmap.entrySet()) {
+            if (queue.size() < maxSize) {
+                queue.offer(new DictionaryEntry(e.getKey(), e.getValue()));
+            } else {
+                queue.offer(new DictionaryEntry(e.getKey(), e.getValue()));
+                queue.poll();
+            }
         }
-        logger.log(Level.INFO, "Dictionary size: {0}", list.size());
-        return list;
+        cmap.clear();
+        cmap = null;
+        Map<String, Integer> dict = new HashMap<>(queue.size());
+        for (DictionaryEntry de : queue) {
+            dict.put(de.getWord(), de.getCounter());
+        }
+        return dict;
     }
 
     static Options options;
@@ -290,7 +312,8 @@ public class SpaceBuilder {
                 .addOption("o", true, "Output directory where WordSpaces will be stored")
                 .addOption("d", true, "The vector dimension (optional, defaults 300)")
                 .addOption("s", true, "The number of seeds (optional, defaults 10)")
-                .addOption("v", true, "The dictionary size (optional, defaults 100.000)");
+                .addOption("v", true, "The dictionary size (optional, defaults 100000)")
+                .addOption("ds", true, "Down sampling factor (optional, defaults 0.001)");
     }
 
     /**
@@ -307,6 +330,7 @@ public class SpaceBuilder {
                     builder.setDimension(Integer.parseInt(cmd.getOptionValue("d", "300")));
                     builder.setSeed(Integer.parseInt(cmd.getOptionValue("s", "10")));
                     builder.setSize(Integer.parseInt(cmd.getOptionValue("v", "100000")));
+                    builder.setSample(Double.parseDouble(cmd.getOptionValue("ds", "1e-3")));
                     builder.build(new File(cmd.getOptionValue("o")));
                 } catch (IOException | NumberFormatException ex) {
                     logger.log(Level.SEVERE, null, ex);
