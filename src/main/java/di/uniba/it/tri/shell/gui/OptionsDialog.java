@@ -215,6 +215,7 @@ public class OptionsDialog extends javax.swing.JDialog {
         getContentPane().add(bottonPanel);
 
         pack();
+        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
     private void openIndexButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openIndexButtonActionPerformed
@@ -229,7 +230,7 @@ public class OptionsDialog extends javax.swing.JDialog {
 
     private void openTriButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openTriButtonActionPerformed
         JFileChooser fc = new JFileChooser(System.getProperty("user.home"));
-        fc.setDialogTitle("Open index...");
+        fc.setDialogTitle("Open TRI space...");
         fc.setDialogType(JFileChooser.OPEN_DIALOG);
         fc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         if (fc.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {

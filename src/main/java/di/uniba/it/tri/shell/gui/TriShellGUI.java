@@ -6,9 +6,14 @@
 package di.uniba.it.tri.shell.gui;
 
 import di.uniba.it.tri.api.Tri;
+import di.uniba.it.tri.api.TriResultObject;
 import di.uniba.it.tri.ir.SearchResult;
 import di.uniba.it.tri.ir.Searcher;
+import di.uniba.it.tri.shell.gui.data.ChartUtils;
 import di.uniba.it.tri.shell.gui.data.Options;
+import di.uniba.it.tri.shell.gui.data.WordEntry;
+import di.uniba.it.tri.vectors.ObjectVector;
+import java.awt.Cursor;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -16,8 +21,12 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
+import javax.swing.ListModel;
+import javax.swing.SwingWorker;
 import org.apache.lucene.queryparser.classic.ParseException;
+import org.jfree.chart.ChartPanel;
 
 /**
  *
@@ -55,6 +64,14 @@ public class TriShellGUI extends javax.swing.JFrame {
         triPanel = new javax.swing.JPanel();
         triToolbar = new javax.swing.JToolBar();
         getb = new javax.swing.JButton();
+        simb = new javax.swing.JButton();
+        nearb = new javax.swing.JButton();
+        jSeparator1 = new javax.swing.JToolBar.Separator();
+        simsb = new javax.swing.JButton();
+        jSeparator2 = new javax.swing.JToolBar.Separator();
+        plotb = new javax.swing.JButton();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        wordJList = new javax.swing.JList<>();
         mainMenubar = new javax.swing.JMenuBar();
         menuFile = new javax.swing.JMenu();
         menuItemClose = new javax.swing.JMenuItem();
@@ -176,7 +193,58 @@ public class TriShellGUI extends javax.swing.JFrame {
         });
         triToolbar.add(getb);
 
+        simb.setText("Sim");
+        simb.setFocusable(false);
+        simb.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        simb.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        simb.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                simbActionPerformed(evt);
+            }
+        });
+        triToolbar.add(simb);
+
+        nearb.setText("Near");
+        nearb.setFocusable(false);
+        nearb.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        nearb.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        nearb.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                nearbActionPerformed(evt);
+            }
+        });
+        triToolbar.add(nearb);
+        triToolbar.add(jSeparator1);
+
+        simsb.setText("Analyze");
+        simsb.setFocusable(false);
+        simsb.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        simsb.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        simsb.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                simsbActionPerformed(evt);
+            }
+        });
+        triToolbar.add(simsb);
+        triToolbar.add(jSeparator2);
+
+        plotb.setText("Plot");
+        plotb.setFocusable(false);
+        plotb.setHorizontalTextPosition(javax.swing.SwingConstants.CENTER);
+        plotb.setVerticalTextPosition(javax.swing.SwingConstants.BOTTOM);
+        plotb.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                plotbActionPerformed(evt);
+            }
+        });
+        triToolbar.add(plotb);
+
         triPanel.add(triToolbar, java.awt.BorderLayout.NORTH);
+
+        wordJList.setModel((ListModel) this.wordListModel);
+        jScrollPane2.setViewportView(wordJList);
+
+        triPanel.add(jScrollPane2, java.awt.BorderLayout.CENTER);
 
         mainTabbedPanel.addTab("Temporal RI", triPanel);
 
@@ -211,6 +279,7 @@ public class TriShellGUI extends javax.swing.JFrame {
         setJMenuBar(mainMenubar);
 
         pack();
+        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
 
     private void menuitemOptionsActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuitemOptionsActionPerformed
@@ -229,10 +298,15 @@ public class TriShellGUI extends javax.swing.JFrame {
                     yearListmodel.removeAllElements();
                     List<String> years = triApi.year(0, Integer.MAX_VALUE);
                     Collections.sort(years);
-                    for (String year : years) {
+                    setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                    LoadTriTask task = new LoadTriTask(years);
+                    task.execute();
+                    progressDialog.getLabel().setText("TRI loading...");
+                    progressDialog.setVisible(true);
+                    /*for (String year : years) {
                         yearListmodel.addElement(year);
-                        triApi.load("file", year, year);
-                    }
+                        triApi.load("mem", year, year);
+                    }*/
                     getDialog.getYearComboBox().setModel(yearListmodel);
                 }
             }
@@ -294,11 +368,83 @@ public class TriShellGUI extends javax.swing.JFrame {
         if (getDialog.getWord() != null && getDialog.getYear() != null) {
             try {
                 triApi.get(getDialog.getYear(), getDialog.getWord() + "_" + getDialog.getYear(), getDialog.getWord());
+                this.wordListModel.addElement(new WordEntry(getDialog.getWord(), getDialog.getYear()));
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Error to get vector\n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }//GEN-LAST:event_getbActionPerformed
+
+    private void simbActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_simbActionPerformed
+        int[] selectedIndices = wordJList.getSelectedIndices();
+        if (selectedIndices.length > 1) {
+            try {
+                WordEntry w1 = wordListModel.get(selectedIndices[0]);
+                WordEntry w2 = wordListModel.get(selectedIndices[1]);
+                double sim = triApi.sim(w1.getKeyLabel(), w2.getKeyLabel());
+                JOptionPane.showMessageDialog(this, "Similarity between " + w1 + " and " + w2 + " = " + sim, "Similarity", JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error to compute similarity\n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }//GEN-LAST:event_simbActionPerformed
+
+    private void nearbActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_nearbActionPerformed
+        int[] selectedIndices = wordJList.getSelectedIndices();
+        if (selectedIndices.length > 0) {
+            //ask year
+            WordEntry we = wordListModel.get(selectedIndices[0]);
+            String ti = JOptionPane.showInputDialog(this, "Please, insert temporal interval", we.getYear());
+            try {
+                List<ObjectVector> near = triApi.near(ti, we.getKeyLabel(), topnear);
+                WordListDialog rsd = new WordListDialog(this, true, near);
+                rsd.setVisible(true);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error to compute neighborhood\n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }//GEN-LAST:event_nearbActionPerformed
+
+    private void simsbActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_simsbActionPerformed
+        if (yearListmodel.getSize() > 0) {
+            DefaultComboBoxModel<String> cym1 = new DefaultComboBoxModel<>();
+            DefaultComboBoxModel<String> cym2 = new DefaultComboBoxModel<>();
+            for (int i = 0; i < yearListmodel.getSize(); i++) {
+                cym1.addElement(yearListmodel.getElementAt(i));
+                cym2.addElement(yearListmodel.getElementAt(i));
+            }
+            SimsDialog simsd = new SimsDialog(this, true);
+            simsd.getComboBox1().setModel(cym1);
+            simsd.getComboBox1().setSelectedIndex(0);
+            simsd.getComboBox2().setModel(cym2);
+            simsd.getComboBox2().setSelectedIndex(0);
+            simsd.setVisible(true);
+            String v1 = simsd.getComboBox1().getSelectedItem().toString();
+            String v2 = simsd.getComboBox2().getSelectedItem().toString();
+            double t1 = (double) simsd.getSliderMin().getValue() / 100d;
+            double t2 = (double) simsd.getSliderMax().getValue() / 100d;
+            try {
+                List<ObjectVector> sims = triApi.sims(v1, v2, topsims, t1, t2);
+                WordListDialog rsd = new WordListDialog(this, true, sims);
+                rsd.setVisible(true);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Error to analyze TRI (sims)\n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }//GEN-LAST:event_simsbActionPerformed
+
+    private void plotbActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_plotbActionPerformed
+        String firstTerm = JOptionPane.showInputDialog("Insert first term");
+        String secondTerm = JOptionPane.showInputDialog("Insert second term");
+        try {
+            List<TriResultObject> plotWords = triApi.plotWords(firstTerm, secondTerm);
+            ChartPanel chartPanel = ChartUtils.plotWords(plotWords, "Plot words over time", firstTerm + "-" + secondTerm);
+            ChartDialog chartDialog=new ChartDialog(this, true, chartPanel);
+            chartDialog.setVisible(true);
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Error to plot words\n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }//GEN-LAST:event_plotbActionPerformed
 
     private void refreshTable() {
         if (results != null) {
@@ -354,9 +500,45 @@ public class TriShellGUI extends javax.swing.JFrame {
         });
     }
 
+    //Task
+    class LoadTriTask extends SwingWorker<Void, Void> {
+
+        final List<String> years;
+
+        public LoadTriTask(List<String> years) {
+            this.years = years;
+        }
+
+        @Override
+        protected Void doInBackground() throws Exception {
+            for (String year : years) {
+                yearListmodel.addElement(year);
+                triApi.load("mem", year, year);
+            }
+            return null;
+        }
+
+        @Override
+        protected void done() {
+            setCursor(null);
+            progressDialog.dispose();
+        }
+
+    }
+    // Start options
+
+    private int topnear = 25;
+
+    private int topsims = 500;
+
+    // End options
+    private ProgressDialog progressDialog = new ProgressDialog(this, true);
+
     private GetDialog getDialog = new GetDialog(this, true);
 
     private DefaultComboBoxModel<String> yearListmodel = new DefaultComboBoxModel<>();
+
+    private DefaultListModel<WordEntry> wordListModel = new DefaultListModel<>();
 
     private int offset = 0;
 
@@ -376,21 +558,29 @@ public class TriShellGUI extends javax.swing.JFrame {
     private javax.swing.JButton getb;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JToolBar.Separator jSeparator1;
+    private javax.swing.JToolBar.Separator jSeparator2;
     private javax.swing.JMenuBar mainMenubar;
     private javax.swing.JTabbedPane mainTabbedPanel;
     private javax.swing.JMenu menuClose;
     private javax.swing.JMenu menuFile;
     private javax.swing.JMenuItem menuItemClose;
     private javax.swing.JMenuItem menuitemOptions;
+    private javax.swing.JButton nearb;
+    private javax.swing.JButton plotb;
     private javax.swing.JTable resultsTable;
     private javax.swing.JButton searchButton;
     private javax.swing.JPanel searchPanel;
+    private javax.swing.JButton simb;
+    private javax.swing.JButton simsb;
     private javax.swing.JButton tableNext;
     private javax.swing.JButton tablePrev;
     private javax.swing.JTextField tfQuery;
     private javax.swing.JSpinner topnSpinner;
     private javax.swing.JPanel triPanel;
     private javax.swing.JToolBar triToolbar;
+    private javax.swing.JList<String> wordJList;
     // End of variables declaration//GEN-END:variables
 
 }

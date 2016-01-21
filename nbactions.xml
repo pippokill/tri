@@ -10,7 +10,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xmx6g -classpath %classpath di.uniba.it.tri.occ.BuildOccurrence -c /home/pierpaolo/dataset/signalmedia/tri/corpus -e TextFileIterableExtractor -t TriEnStandardTokenizer -w 7 -s /home/pierpaolo/data/allen-ai-exp/resources/stopword.en -o /home/pierpaolo/dataset/signalmedia/tri/occ/</exec.args>
+                <exec.args>-Xmx6g -classpath %classpath di.uniba.it.tri.shell.gui.TriShellGUI</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>
@@ -24,7 +24,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -Xmx6g -classpath %classpath di.uniba.it.tri.occ.BuildOccurrence -c /home/pierpaolo/dataset/signalmedia/tri/corpus -e TextFileIterableExtractor -t TriEnStandardTokenizer -w 7 -s /home/pierpaolo/data/allen-ai-exp/resources/stopword.en -o /home/pierpaolo/dataset/signalmedia/tri/occ/</exec.args>
+                <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -Xmx6g -classpath %classpath di.uniba.it.tri.shell.gui.TriShellGUI</exec.args>
                 <exec.executable>java</exec.executable>
                 <jpda.listen>true</jpda.listen>
             </properties>
@@ -39,7 +39,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xmx6g -classpath %classpath di.uniba.it.tri.occ.BuildOccurrence -c /home/pierpaolo/dataset/signalmedia/tri/corpus -e TextFileIterableExtractor -t TriEnStandardTokenizer -w 7 -s /home/pierpaolo/data/allen-ai-exp/resources/stopword.en -o /home/pierpaolo/dataset/signalmedia/tri/occ/</exec.args>
+                <exec.args>-Xmx6g -classpath %classpath di.uniba.it.tri.shell.gui.TriShellGUI</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>
