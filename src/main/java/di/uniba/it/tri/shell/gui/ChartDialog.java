@@ -5,6 +5,10 @@
  */
 package di.uniba.it.tri.shell.gui;
 
+import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JOptionPane;
 import org.jfree.chart.ChartPanel;
 
 /**
@@ -34,12 +38,48 @@ public class ChartDialog extends javax.swing.JDialog {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        jPanel1 = new javax.swing.JPanel();
+        saveb = new javax.swing.JButton();
+        closeb = new javax.swing.JButton();
+
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setPreferredSize(new java.awt.Dimension(640, 480));
+
+        jPanel1.setLayout(new java.awt.FlowLayout(java.awt.FlowLayout.RIGHT));
+
+        saveb.setText("Save");
+        saveb.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                savebActionPerformed(evt);
+            }
+        });
+        jPanel1.add(saveb);
+
+        closeb.setText("Close");
+        closeb.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                closebActionPerformed(evt);
+            }
+        });
+        jPanel1.add(closeb);
+
+        getContentPane().add(jPanel1, java.awt.BorderLayout.SOUTH);
 
         pack();
         setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
+
+    private void closebActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_closebActionPerformed
+        this.dispose();
+    }//GEN-LAST:event_closebActionPerformed
+
+    private void savebActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_savebActionPerformed
+        try {
+            this.chartPanel.doSaveAs();
+        } catch (IOException ex) {
+            JOptionPane.showMessageDialog(this, "Error to save chart\n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }//GEN-LAST:event_savebActionPerformed
 
     private void initMy() {
         this.getContentPane().add(chartPanel, java.awt.BorderLayout.CENTER);
@@ -47,5 +87,8 @@ public class ChartDialog extends javax.swing.JDialog {
 
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton closeb;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JButton saveb;
     // End of variables declaration//GEN-END:variables
 }

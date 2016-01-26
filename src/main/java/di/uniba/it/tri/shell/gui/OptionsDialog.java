@@ -246,11 +246,19 @@ public class OptionsDialog extends javax.swing.JDialog {
     private void okButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_okButtonActionPerformed
         options = new Options();
         options.setId(tfId.getText());
-        options.setIndex(tfIndex.getText());
+        if (tfIndex.getText().equals("<empty>")) {
+            options.setIndex(null);
+        } else {
+            options.setIndex(tfIndex.getText());
+        }
         options.setPublished(tfPub.getText());
         options.setSource(tfSource.getText());
         options.setText(tfText.getText().split(":"));
-        options.setTriFolder(tfTri.getText());
+        if (tfTri.getText().equals("<empty>")) {
+            options.setTriFolder(null);
+        } else {
+            options.setTriFolder(tfTri.getText());
+        }
         options.setDateFormat(tfDateformat.getText());
         this.dispose();
     }//GEN-LAST:event_okButtonActionPerformed

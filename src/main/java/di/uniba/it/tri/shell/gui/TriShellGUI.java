@@ -11,6 +11,7 @@ import di.uniba.it.tri.ir.SearchResult;
 import di.uniba.it.tri.ir.Searcher;
 import di.uniba.it.tri.shell.gui.data.ChartUtils;
 import di.uniba.it.tri.shell.gui.data.Options;
+import di.uniba.it.tri.shell.gui.data.TimePeriod;
 import di.uniba.it.tri.shell.gui.data.WordEntry;
 import di.uniba.it.tri.vectors.ObjectVector;
 import java.awt.Cursor;
@@ -18,8 +19,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
@@ -61,6 +60,9 @@ public class TriShellGUI extends javax.swing.JFrame {
         resultsTable = new javax.swing.JTable();
         tablePrev = new javax.swing.JButton();
         tableNext = new javax.swing.JButton();
+        timeCheck = new javax.swing.JCheckBox();
+        timeComboBox = new javax.swing.JComboBox<>();
+        openb = new javax.swing.JButton();
         triPanel = new javax.swing.JPanel();
         triToolbar = new javax.swing.JToolBar();
         getb = new javax.swing.JButton();
@@ -77,6 +79,7 @@ public class TriShellGUI extends javax.swing.JFrame {
         menuItemClose = new javax.swing.JMenuItem();
         menuClose = new javax.swing.JMenu();
         menuitemOptions = new javax.swing.JMenuItem();
+        menuItemTimeSetting = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setTitle("Temporal RI - (GUI ver. 0.10b)");
@@ -176,6 +179,29 @@ public class TriShellGUI extends javax.swing.JFrame {
         gridBagConstraints.gridy = 13;
         searchPanel.add(tableNext, gridBagConstraints);
 
+        timeCheck.setText("Enable time search");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 13;
+        searchPanel.add(timeCheck, gridBagConstraints);
+
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 2;
+        gridBagConstraints.gridy = 13;
+        searchPanel.add(timeComboBox, gridBagConstraints);
+
+        openb.setText("Open doc...");
+        openb.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                openbActionPerformed(evt);
+            }
+        });
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 5;
+        gridBagConstraints.gridy = 1;
+        gridBagConstraints.insets = new java.awt.Insets(4, 4, 4, 4);
+        searchPanel.add(openb, gridBagConstraints);
+
         mainTabbedPanel.addTab("Search", searchPanel);
 
         triPanel.setLayout(new java.awt.BorderLayout());
@@ -274,6 +300,15 @@ public class TriShellGUI extends javax.swing.JFrame {
         });
         menuClose.add(menuitemOptions);
 
+        menuItemTimeSetting.setText("Time setting...");
+        menuItemTimeSetting.setEnabled(false);
+        menuItemTimeSetting.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                menuItemTimeSettingActionPerformed(evt);
+            }
+        });
+        menuClose.add(menuItemTimeSetting);
+
         mainMenubar.add(menuClose);
 
         setJMenuBar(mainMenubar);
@@ -287,15 +322,16 @@ public class TriShellGUI extends javax.swing.JFrame {
             optionsDialog.setVisible(true);
             Options options = optionsDialog.getOptions();
             if (options != null) {
-                File newIndexFile = new File(options.getIndex());
-                if (!newIndexFile.equals(indexDir)) {
-                    indexDir = newIndexFile;
-                    searcher = new Searcher(indexDir);
+                if (options.getIndex() != null) {
+                    File newIndexFile = new File(options.getIndex());
+                    if (!newIndexFile.equals(indexDir)) {
+                        indexDir = newIndexFile;
+                        searcher = new Searcher(indexDir);
+                    }
                 }
-                if (!options.getTriFolder().equals(triFolder)) {
+                if (options.getTriFolder() != null && !options.getTriFolder().equals(triFolder)) {
                     triApi.close();
                     triApi.setMaindir(options.getTriFolder());
-                    yearListmodel.removeAllElements();
                     List<String> years = triApi.year(0, Integer.MAX_VALUE);
                     Collections.sort(years);
                     setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
@@ -303,11 +339,17 @@ public class TriShellGUI extends javax.swing.JFrame {
                     task.execute();
                     progressDialog.getLabel().setText("TRI loading...");
                     progressDialog.setVisible(true);
-                    /*for (String year : years) {
-                        yearListmodel.addElement(year);
-                        triApi.load("mem", year, year);
-                    }*/
                     getDialog.getYearComboBox().setModel(yearListmodel);
+                    //init time period dialog
+                    DefaultComboBoxModel<String> tsModel = new DefaultComboBoxModel<>();
+                    DefaultComboBoxModel<String> ysModel = new DefaultComboBoxModel<>();
+                    for (int i = 0; i < yearListmodel.getSize(); i++) {
+                        tsModel.addElement(yearListmodel.getElementAt(i));
+                        ysModel.addElement(yearListmodel.getElementAt(i));
+                    }
+                    timeComboBox.setModel(ysModel);
+                    timeSetupDialog = new TimeSetupDialog(this, true, tsModel);
+                    menuItemTimeSetting.setEnabled(true);
                 }
             }
         } catch (Exception ex) {
@@ -326,7 +368,18 @@ public class TriShellGUI extends javax.swing.JFrame {
             String queryText = tfQuery.getText();
             if (queryText != null && queryText.length() > 0) {
                 try {
-                    results = searcher.search(queryText, ((Integer) topnSpinner.getModel().getValue()));
+                    if (timeCheck.isSelected()) {
+                        Object item = timeComboBox.getSelectedItem();
+                        if (item != null && timeSetupDialog.getPeriodMap().containsKey(item.toString())) {
+                            TimePeriod tp = timeSetupDialog.getPeriodMap().get(item.toString());
+                            results = searcher.search(queryText, (Integer) topnSpinner.getModel().getValue(), tp.getStart(), tp.getEnd());
+                        } else {
+                            JOptionPane.showMessageDialog(this, "No valid time period", "Warning", JOptionPane.WARNING_MESSAGE);
+                            results = searcher.search(queryText, ((Integer) topnSpinner.getModel().getValue()));
+                        }
+                    } else {
+                        results = searcher.search(queryText, ((Integer) topnSpinner.getModel().getValue()));
+                    }
                     refreshTable();
                 } catch (ParseException | IOException ex) {
                     JOptionPane.showMessageDialog(this, "Error to search\n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -439,12 +492,27 @@ public class TriShellGUI extends javax.swing.JFrame {
         try {
             List<TriResultObject> plotWords = triApi.plotWords(firstTerm, secondTerm);
             ChartPanel chartPanel = ChartUtils.plotWords(plotWords, "Plot words over time", firstTerm + "-" + secondTerm);
-            ChartDialog chartDialog=new ChartDialog(this, true, chartPanel);
+            ChartDialog chartDialog = new ChartDialog(this, true, chartPanel);
             chartDialog.setVisible(true);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Error to plot words\n" + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }//GEN-LAST:event_plotbActionPerformed
+
+    private void openbActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_openbActionPerformed
+        int selectedRow = resultsTable.getSelectedRow();
+        if (selectedRow > -1) {
+            String id = resultsTable.getModel().getValueAt(selectedRow, 0).toString();
+            String content = resultsTable.getModel().getValueAt(selectedRow, 1).toString();
+            docDialog.setTitle("Document " + id);
+            docDialog.setText(content);
+            docDialog.setVisible(true);
+        }
+    }//GEN-LAST:event_openbActionPerformed
+
+    private void menuItemTimeSettingActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuItemTimeSettingActionPerformed
+        timeSetupDialog.setVisible(true);
+    }//GEN-LAST:event_menuItemTimeSettingActionPerformed
 
     private void refreshTable() {
         if (results != null) {
@@ -476,9 +544,8 @@ public class TriShellGUI extends javax.swing.JFrame {
          */
         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
+                if ("GTK+".equals(info.getName())) {
                     javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
                 }
             }
         } catch (ClassNotFoundException ex) {
@@ -511,6 +578,7 @@ public class TriShellGUI extends javax.swing.JFrame {
 
         @Override
         protected Void doInBackground() throws Exception {
+            yearListmodel.removeAllElements();
             for (String year : years) {
                 yearListmodel.addElement(year);
                 triApi.load("mem", year, year);
@@ -532,6 +600,10 @@ public class TriShellGUI extends javax.swing.JFrame {
     private int topsims = 500;
 
     // End options
+    private DocDialog docDialog = new DocDialog(this, false);
+
+    private TimeSetupDialog timeSetupDialog;
+
     private ProgressDialog progressDialog = new ProgressDialog(this, true);
 
     private GetDialog getDialog = new GetDialog(this, true);
@@ -566,8 +638,10 @@ public class TriShellGUI extends javax.swing.JFrame {
     private javax.swing.JMenu menuClose;
     private javax.swing.JMenu menuFile;
     private javax.swing.JMenuItem menuItemClose;
+    private javax.swing.JMenuItem menuItemTimeSetting;
     private javax.swing.JMenuItem menuitemOptions;
     private javax.swing.JButton nearb;
+    private javax.swing.JButton openb;
     private javax.swing.JButton plotb;
     private javax.swing.JTable resultsTable;
     private javax.swing.JButton searchButton;
@@ -577,6 +651,8 @@ public class TriShellGUI extends javax.swing.JFrame {
     private javax.swing.JButton tableNext;
     private javax.swing.JButton tablePrev;
     private javax.swing.JTextField tfQuery;
+    private javax.swing.JCheckBox timeCheck;
+    private javax.swing.JComboBox<String> timeComboBox;
     private javax.swing.JSpinner topnSpinner;
     private javax.swing.JPanel triPanel;
     private javax.swing.JToolBar triToolbar;

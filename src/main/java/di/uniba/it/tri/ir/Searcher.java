@@ -25,7 +25,10 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.queryparser.classic.MultiFieldQueryParser;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
@@ -123,6 +126,37 @@ public class Searcher {
         query = QueryParser.escape(query);
         QueryParser qp = new MultiFieldQueryParser(textFieldname, analyzer);
         Query q = qp.parse(query);
+        TopDocs topDocs = searcher.search(q, topn);
+        for (int i = 0; i < topDocs.scoreDocs.length; i++) {
+            SearchResult sr = new SearchResult(topDocs.scoreDocs[i].doc, topDocs.scoreDocs[i].score);
+            Document doc = searcher.doc(sr.getDocid());
+            sr.setId(doc.get(idFieldname));
+            sr.setSource(doc.get(sourceFieldname));
+            StringBuilder sb = new StringBuilder();
+            for (String fn : textFieldname) {
+                sb.append(doc.get(fn)).append("\n");
+            }
+            sr.setText(sb.toString());
+            results.add(sr);
+            try {
+                Date date = dateFormat.parse(doc.get(dateFieldname));
+                sr.setDate(date);
+            } catch (java.text.ParseException ex) {
+                Logger.getLogger(Searcher.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return results;
+    }
+
+    public List<SearchResult> search(String query, int topn, Date start, Date end) throws ParseException, IOException {
+        List<SearchResult> results = new ArrayList<>();
+        query = QueryParser.escape(query);
+        QueryParser qp = new MultiFieldQueryParser(textFieldname, analyzer);
+        Query qtext = qp.parse(query);
+        Query qtime = NumericRangeQuery.newLongRange("time", start.getTime(), end.getTime(), true, true);
+        BooleanQuery q = new BooleanQuery();
+        q.add(qtext, BooleanClause.Occur.MUST);
+        q.add(qtime, BooleanClause.Occur.MUST);
         TopDocs topDocs = searcher.search(q, topn);
         for (int i = 0; i < topDocs.scoreDocs.length; i++) {
             SearchResult sr = new SearchResult(topDocs.scoreDocs[i].doc, topDocs.scoreDocs[i].score);
