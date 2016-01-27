@@ -38,7 +38,7 @@ package di.uniba.it.tri.api;
  *
  * @author pierpaolo
  */
-public class TriResultObject {
+public class TriResultObject implements Comparable<TriResultObject> {
 
     private String value;
 
@@ -73,5 +73,10 @@ public class TriResultObject {
     public String toConsoleString() {
         return this.value + "\t" + this.score;
     }
-    
+
+    @Override
+    public int compareTo(TriResultObject o) {
+        return Float.compare(o.score, score);
+    }
+
 }
