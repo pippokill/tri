@@ -6,14 +6,11 @@
 package di.uniba.it.tri.script;
 
 import di.uniba.it.tri.api.Tri;
-import static di.uniba.it.tri.script.FindNoChangeWords.cmdParser;
-import di.uniba.it.tri.space.SpaceBuilder;
 import di.uniba.it.tri.vectors.ObjectVector;
 import di.uniba.it.tri.vectors.ReverseObjectVectorComparator;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
@@ -23,7 +20,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.FSDirectory;
@@ -33,13 +29,13 @@ import org.apache.lucene.store.FSDirectory;
  * @author pierpaolo
  */
 public class FindVariation {
-    
+
     private static final Logger LOG = Logger.getLogger(FindVariation.class.getName());
-    
+
     static Options options;
-    
+
     static CommandLineParser cmdParser = new BasicParser();
-    
+
     static {
         options = new Options();
         options.addOption("d", true, "TIR directory")
@@ -80,7 +76,7 @@ public class FindVariation {
                     if (reader != null) {
                         for (ObjectVector ov : results) {
                             double ds = (double) reader.docFreq(new Term(fieldname, ov.getKey())) / (double) reader.maxDoc();
-                            ov.setScore((ov.getScore() + ds) / 2);
+                            ov.setScore(ov.getScore() * ds);
                         }
                     }
                     Collections.sort(results, new ReverseObjectVectorComparator());
@@ -101,5 +97,5 @@ public class FindVariation {
             LOG.log(Level.SEVERE, null, ex);
         }
     }
-    
+
 }
