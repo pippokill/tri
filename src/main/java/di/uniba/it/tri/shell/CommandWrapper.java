@@ -125,6 +125,8 @@ public class CommandWrapper {
             sims(command);
         } else if (command.matches("(^plot$)|(^plot\\s+.*$)")) {
             plot(command);
+        } else if (command.matches("(^cluster$)|(^cluster\\s+.*$)")) {
+            cluster(command);
         } else {
             throw new Exception("Unknown command: " + command);
         }
@@ -599,6 +601,15 @@ public class CommandWrapper {
         }
     }
 
+    private void cluster(String cmd) throws Exception {
+        String[] split = cmd.split("\\s+");
+        if (split.length == 4) {
+            tri.cluster(split[1], Integer.parseInt(split[2]), split[3]);
+        } else {
+            throw new Exception("No valid cluster command");
+        }
+    }
+
     private void initHelp() {
         help.setProperty("set", "set <main dir> - set the main directory in which WordSpaces are stored");
         help.setProperty("index", "index <file|mem> <name> - create a words index from a vector reader using a filename (file) or a previous reader loaded in memory (mem)");
@@ -629,7 +640,8 @@ public class CommandWrapper {
         help.setProperty("vset", "vset <vector reader name> <set name> <vector name> - convert a set into a vector fetching vectors from the vector reader");
         //plot command
         help.setProperty("plot", "plot word (word)+ OR plot words word1 word2 - 'plot word' plots meaning variation over the time for all the (word)+, while 'plot words' plots similarity between word1 and word2 over the time");
-
+        //cluster
+        help.setProperty("cluster", "cluster <vector name> <k> <output file> - Create k clusters from the vector reader and save the results in the output file");
     }
 
 }

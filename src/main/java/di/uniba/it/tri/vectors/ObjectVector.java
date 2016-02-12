@@ -47,6 +47,8 @@ public class ObjectVector implements Comparable<ObjectVector> {
     private Vector vector;
 
     private double score = 1;
+    
+    private int cluster;
 
     /**
      *
@@ -159,5 +161,15 @@ public class ObjectVector implements Comparable<ObjectVector> {
     public void setScore(double score) {
         this.score = score;
     }
+
+    public int getCluster() {
+        return cluster;
+    }
+
+    public void setCluster(int cluster) {
+        this.cluster = cluster;
+    }
+    
+    
 
 }

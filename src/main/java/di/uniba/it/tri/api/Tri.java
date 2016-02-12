@@ -34,6 +34,8 @@
  */
 package di.uniba.it.tri.api;
 
+import di.uniba.it.tri.ClusterComparator;
+import di.uniba.it.tri.Clusters;
 import di.uniba.it.tri.TemporalSpaceUtils;
 import di.uniba.it.tri.vectors.FileVectorReader;
 import di.uniba.it.tri.vectors.MemoryVectorReader;
@@ -42,7 +44,9 @@ import di.uniba.it.tri.vectors.Vector;
 import di.uniba.it.tri.vectors.VectorFactory;
 import di.uniba.it.tri.vectors.VectorReader;
 import di.uniba.it.tri.vectors.VectorType;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -179,12 +183,10 @@ public class Tri {
     public void load(String type, String name, String year) throws Exception {
         if (mainDir == null) {
             throw new Exception("Main dir not set");
+        } else if (name == null) {
+            loadVectorReader(type, ELEMENTAL_NAME, TemporalSpaceUtils.getElementalFile(mainDir));
         } else {
-            if (name == null) {
-                loadVectorReader(type, ELEMENTAL_NAME, TemporalSpaceUtils.getElementalFile(mainDir));
-            } else {
-                loadVectorReader(type, name, TemporalSpaceUtils.getVectorFile(mainDir, year));
-            }
+            loadVectorReader(type, name, TemporalSpaceUtils.getVectorFile(mainDir, year));
         }
     }
 
@@ -589,5 +591,42 @@ public class Tri {
             vr.close();
         }
         return list;
+    }
+
+    public void cluster(String vectorName, int k, String outFilename) throws Exception {
+        VectorReader vr = stores.get(vectorName);
+        if (vr != null) {
+            List<ObjectVector> vectors = new ArrayList<>();
+            Iterator<ObjectVector> allVectors = vr.getAllVectors();
+            while (allVectors.hasNext()) {
+                vectors.add(allVectors.next());
+            }
+            Clusters clusters = TemporalSpaceUtils.kMeansCluster(vr, vectors, k);
+            int[] mappings = clusters.getClusterMappings();
+            for (int i = 0; i < vectors.size(); i++) {
+                vectors.get(i).setCluster(mappings[i]);
+            }
+            Collections.sort(vectors, new ClusterComparator());
+            BufferedWriter writer = new BufferedWriter(new FileWriter(outFilename));
+            for (ObjectVector ov : vectors) {
+                writer.append(ov.getKey()).append("\t").append(String.valueOf(ov.getCluster()));
+                writer.newLine();
+            }
+            writer.newLine();
+            Vector[] centroids = clusters.getCentroids();
+            for (int i = 0; i < centroids.length; i++) {
+                for (int j = 0; j < centroids.length; j++) {
+                    if (i != j) {
+                        writer.append(String.valueOf(i)).append("\t").append(String.valueOf(j)).append("\t")
+                                .append(String.valueOf(centroids[i].measureOverlap(centroids[j])));
+                        writer.newLine();
+                    }
+                }
+            }
+            writer.close();
+        } else {
+            throw new Exception("Vector reader " + vectorName + " not found");
+        }
+
     }
 }

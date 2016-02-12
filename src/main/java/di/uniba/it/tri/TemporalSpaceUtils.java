@@ -41,9 +41,11 @@ import di.uniba.it.tri.vectors.MemoryVectorReader;
 import di.uniba.it.tri.vectors.ObjectVector;
 import di.uniba.it.tri.vectors.ReverseObjectVectorComparator;
 import di.uniba.it.tri.vectors.Vector;
+import di.uniba.it.tri.vectors.VectorFactory;
 import di.uniba.it.tri.vectors.VectorReader;
 import di.uniba.it.tri.vectors.VectorStoreUtils;
 import di.uniba.it.tri.vectors.VectorType;
+import static di.uniba.it.tri.vectors.VectorUtils.getNearestVector;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -60,6 +62,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.PriorityQueue;
+import java.util.Random;
 import java.util.Set;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
@@ -392,7 +395,7 @@ public class TemporalSpaceUtils {
     public static File getVectorFile(File startDir, String year) {
         return new File(startDir.getAbsolutePath() + "/count_" + year + ".vectors");
     }
-    
+
     /**
      * Get the VectorReader in which vectors of a specified year are stored
      *
@@ -513,5 +516,47 @@ public class TemporalSpaceUtils {
         reader.close();
         return set;
     }
+    
+    public static Clusters kMeansCluster(VectorReader vr, List<ObjectVector> objectVectors, int k) throws IOException {
+        Clusters clusters = new Clusters(new int[objectVectors.size()], new Vector[k]);
+        Random rand = new Random();
 
+        // Initialize cluster mappings randomly.
+        for (int i = 0; i < objectVectors.size(); ++i) {
+            int randInt = rand.nextInt(Integer.MAX_VALUE);
+            clusters.getClusterMappings()[i] = randInt % k;
+        }
+
+        // Loop that computes centroids and reassigns members.
+        boolean clustering = true;
+        while (clustering) {
+            // Clear centroid register.
+            for (int i = 0; i < clusters.getCentroids().length; ++i) {
+                clusters.getCentroids()[i] = VectorFactory.createZeroVector(VectorType.REAL, vr.getDimension());
+            }
+            // Generate new cluster centroids.
+            for (int i = 0; i < objectVectors.size(); ++i) {
+                clusters.getCentroids()[clusters.getClusterMappings()[i]].superpose(objectVectors.get(i).getVector(), 1, null);
+            }
+            for (int i = 0; i < k; ++i) {
+                clusters.getCentroids()[i].normalize();
+            }
+            
+            boolean changeFlag = false;
+            // Map items to clusters.
+            for (int i = 0; i < objectVectors.size(); i++) {
+                int j = getNearestVector(objectVectors.get(i).getVector(), clusters.getCentroids());
+                if (j != clusters.getClusterMappings()[i]) {
+                    changeFlag = true;
+                    clusters.getClusterMappings()[i] = j;
+                }
+            }
+            if (changeFlag == false) {
+                clustering = false;
+            }
+        }
+        
+        return clusters;
+    }
+    
 }
