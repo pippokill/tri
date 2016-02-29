@@ -1,4 +1,4 @@
-Temporal Random Indexing (v. 0.40 - 24/08/2015)
+Temporal Random Indexing (v. 0.60 - 24/08/2015)
 ===============================================
 
 General info
@@ -56,25 +56,43 @@ usage: Run the TRI shell<br>
 
 **di.uniba.it.tri.occ.BuildOccurrence**
 
-usage: Build the co-occurrences matrices given the set of files with the year of publication [-c <arg>] [-e <arg>] [-o <arg>] [-r <arg>] [-w <arg>]<br>
- -c <arg>   The corpus directory containing files with the year of publication<br>
+usage: Build the co-occurrences matrix given the set of files with year metadata [-c <arg>] [-e <arg>] [-f <arg>] [-k <arg>] [-o <arg>] [-r <arg>] [-s <arg>] [-t <arg>] [-w <arg>]<br>
+ -c <arg>   The corpus directory containing files with year metadata<br>
  -e <arg>   The class used to extract the content from files<br>
  -f <arg>   Filter class (optional)<br>
- -o <arg>   Output directory where the output will be stored<br>
+ -k <arg>   Load keyword list<br>
+ -o <arg>   Output directory where output will be stored<br>
  -r <arg>   Regular expression used to fetch files (optional, default ".+")<br>
- -s <arg>   Stop word file (optional)<br>
- -t <arg>   The class used to tokenize the content (optional, default TriStandardTokenizer)<br>
+ -s <arg>   Stop word file (optional)
+ -t <arg>   The class used to tokenize the content (optional, default StandardTokenizer)<br>
  -w <arg>   The window size used to compute the co-occurrences (optional, default 5)
+
+List of available extractors:
+*   AANExtractor: extractor for the ACL-AAN dataset
+*   GutenbergExtractor: extractor for the Gutenberg Project
+*   TextFileIterableExtractor: one document for each line
+*   TxtExtractor: one text file for each document
+
+List of available tokenizers:
+*   TriEnStandardTokenizer: standard tokenizer
+*   TriItStandardTokenizer: standard tokenizer for Italian
+*   TriStandardTokenizer: standard tokenizer for English
+*   TriTwitterTokenizer: tokenizer for tweets
+
+List of available filters:
+*   BasicLatinFilter: filter for no basic latin characters
+*   LetterFilter: filter for no letter characters
+*   StandardFilter: it removes tokens that do not match "[^A-Za-z_0-9]+"
 
 **di.uniba.it.tri.space.SpaceBuilder**
 
-usage: Build WordSpace using Temporal Random Indexing [-c <arg>] [-d
-       <arg>] [-o <arg>] [-s <arg>] [-v <arg>]<br>
- -c <arg>   The directory containing the co-occurrences matrices<br>
- -d <arg>   The vector dimension (optional, defaults 300)<br>
- -o <arg>   Output directory where WordSpaces will be stored<br>
- -s <arg>   The number of seeds (optional, defaults 10)<br>
- -v <arg>   The dictionary size (optional, defaults 100000)
+usage: Build WordSpace using Temporal Random Indexing [-c <arg>] [-d <arg>] [-ds <arg>] [-o <arg>] [-s <arg>] [-v <arg>]<br>
+ -c <arg>    The directory containing the co-occurrences matrices<br>
+ -d <arg>    The vector dimension (optional, defaults 300)<br>
+ -ds <arg>   Down sampling factor (optional, defaults 0.001)<br>
+ -o <arg>    Output directory where WordSpaces will be stored<br>
+ -s <arg>    The number of seeds (optional, defaults 10)<br>
+ -v <arg>    The dictionary size (optional, defaults 100000)
 
 Shell Guideline
 ---------------

@@ -10,6 +10,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.en.EnglishPossessiveFilter;
 import org.apache.lucene.analysis.en.PorterStemFilter;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
@@ -45,7 +46,7 @@ public class EnglishNoStemAnalyzer extends StopwordAnalyzerBase {
     }
 
     public EnglishNoStemAnalyzer() {
-        this(CharArraySet.EMPTY_SET);
+        this(DefaultSetHolder.DEFAULT_STOP_SET);
     }
 
     /**

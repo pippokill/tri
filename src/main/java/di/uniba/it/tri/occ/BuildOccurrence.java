@@ -42,6 +42,7 @@ import com.google.common.collect.Multiset.Entry;
 import di.uniba.it.tri.extractor.Extractor;
 import di.uniba.it.tri.extractor.IterableExtractor;
 import di.uniba.it.tri.tokenizer.Filter;
+import di.uniba.it.tri.tokenizer.KeywordFinder;
 import di.uniba.it.tri.tokenizer.StopWordFilter;
 import di.uniba.it.tri.tokenizer.TriTokenizer;
 import java.io.BufferedWriter;
@@ -50,6 +51,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
+import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -404,7 +406,8 @@ public class BuildOccurrence {
                 .addOption("t", true, "The class used to tokenize the content (optional, default StandardTokenizer)")
                 .addOption("r", true, "Regular expression used to fetch files (optional, default \".+\")")
                 .addOption("s", true, "Stop word file (optional)")
-                .addOption("f", true, "Filter class (optional)");
+                .addOption("f", true, "Filter class (optional)")
+                .addOption("k", true, "Load keyword list");
     }
 
     /**
@@ -418,7 +421,24 @@ public class BuildOccurrence {
             if (cmd.hasOption("c") && cmd.hasOption("o") && cmd.hasOption("e")) {
                 try {
                     Object classExtractor = Class.forName("di.uniba.it.tri.extractor." + cmd.getOptionValue("e")).newInstance();
-                    TriTokenizer tokenizer = (TriTokenizer) Class.forName("di.uniba.it.tri.tokenizer." + cmd.getOptionValue("t", "TriStandardTokenizer")).newInstance();
+                    TriTokenizer tokenizer = null;
+                    if (cmd.hasOption("k")) {
+                        Constructor<?>[] constructors = Class.forName("di.uniba.it.tri.tokenizer." + cmd.getOptionValue("t", "TriStandardTokenizer")).getConstructors();
+                        for (Constructor c : constructors) {
+                            if (c.getParameterTypes().length == 1 && c.getParameterTypes()[0].equals(KeywordFinder.class)) {
+                                KeywordFinder finder = new KeywordFinder(new File(cmd.getOptionValue("k")));
+                                tokenizer = (TriTokenizer) c.newInstance(finder);
+                                break;
+                            }
+                        }
+                        //fall-back strategy
+                        if (tokenizer == null) {
+                            logger.log(Level.WARNING, "No KeywordFinder constructor for {0}, use default constructor...", cmd.getOptionValue("t"));
+                            tokenizer = (TriTokenizer) Class.forName("di.uniba.it.tri.tokenizer." + cmd.getOptionValue("t", "TriStandardTokenizer")).newInstance();
+                        }
+                    } else {
+                        tokenizer = (TriTokenizer) Class.forName("di.uniba.it.tri.tokenizer." + cmd.getOptionValue("t", "TriStandardTokenizer")).newInstance();
+                    }
                     BuildOccurrence builder = new BuildOccurrence();
                     builder.setOutputDir(new File(cmd.getOptionValue("o")));
                     builder.setWinsize(Integer.parseInt(cmd.getOptionValue("w", "5")));
