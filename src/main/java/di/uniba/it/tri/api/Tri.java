@@ -75,7 +75,7 @@ public class Tri {
 
     private IndexReader reader;
 
-    private static final String ELEMENTAL_NAME = "*elemental*";
+    public static final String ELEMENTAL_NAME = "*elemental*";
 
     private static final QueryParser parser = new QueryParser("word", new StandardAnalyzer(CharArraySet.EMPTY_SET));
 
