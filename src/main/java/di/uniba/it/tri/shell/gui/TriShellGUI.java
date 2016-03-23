@@ -43,6 +43,7 @@ import di.uniba.it.tri.shell.gui.data.Options;
 import di.uniba.it.tri.shell.gui.data.TimePeriod;
 import di.uniba.it.tri.shell.gui.data.WordEntry;
 import di.uniba.it.tri.vectors.ObjectVector;
+import di.uniba.it.tri.vectors.VectorReader;
 import java.awt.Cursor;
 import java.io.File;
 import java.io.IOException;
@@ -92,6 +93,7 @@ public class TriShellGUI extends javax.swing.JFrame {
         timeCheck = new javax.swing.JCheckBox();
         timeComboBox = new javax.swing.JComboBox<>();
         openb = new javax.swing.JButton();
+        semanticCheck = new javax.swing.JCheckBox();
         triPanel = new javax.swing.JPanel();
         triToolbar = new javax.swing.JToolBar();
         getb = new javax.swing.JButton();
@@ -212,6 +214,7 @@ public class TriShellGUI extends javax.swing.JFrame {
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 1;
         gridBagConstraints.gridy = 13;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
         searchPanel.add(timeCheck, gridBagConstraints);
 
         gridBagConstraints = new java.awt.GridBagConstraints();
@@ -230,6 +233,13 @@ public class TriShellGUI extends javax.swing.JFrame {
         gridBagConstraints.gridy = 1;
         gridBagConstraints.insets = new java.awt.Insets(4, 4, 4, 4);
         searchPanel.add(openb, gridBagConstraints);
+
+        semanticCheck.setText("Semantic Search");
+        gridBagConstraints = new java.awt.GridBagConstraints();
+        gridBagConstraints.gridx = 1;
+        gridBagConstraints.gridy = 14;
+        gridBagConstraints.anchor = java.awt.GridBagConstraints.WEST;
+        searchPanel.add(semanticCheck, gridBagConstraints);
 
         mainTabbedPanel.addTab("Search", searchPanel);
 
@@ -400,8 +410,14 @@ public class TriShellGUI extends javax.swing.JFrame {
                     if (timeCheck.isSelected()) {
                         Object item = timeComboBox.getSelectedItem();
                         if (item != null && timeSetupDialog.getPeriodMap().containsKey(item.toString())) {
-                            TimePeriod tp = timeSetupDialog.getPeriodMap().get(item.toString());
-                            results = searcher.search(queryText, (Integer) topnSpinner.getModel().getValue(), tp.getStart(), tp.getEnd());
+                            if (semanticCheck.isSelected()) {
+                                TimePeriod tp = timeSetupDialog.getPeriodMap().get(item.toString());
+                                VectorReader vr = triApi.getStores().get(tp.getKey());
+                                results = searcher.search(queryText, (Integer) topnSpinner.getModel().getValue(), tp.getStart(), tp.getEnd(), vr);
+                            } else {
+                                TimePeriod tp = timeSetupDialog.getPeriodMap().get(item.toString());
+                                results = searcher.search(queryText, (Integer) topnSpinner.getModel().getValue(), tp.getStart(), tp.getEnd());
+                            }
                         } else {
                             JOptionPane.showMessageDialog(this, "No valid time period", "Warning", JOptionPane.WARNING_MESSAGE);
                             results = searcher.search(queryText, ((Integer) topnSpinner.getModel().getValue()));
@@ -675,6 +691,7 @@ public class TriShellGUI extends javax.swing.JFrame {
     private javax.swing.JTable resultsTable;
     private javax.swing.JButton searchButton;
     private javax.swing.JPanel searchPanel;
+    private javax.swing.JCheckBox semanticCheck;
     private javax.swing.JButton simb;
     private javax.swing.JButton simsb;
     private javax.swing.JButton tableNext;

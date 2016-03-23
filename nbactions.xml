@@ -10,7 +10,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xmx6g -classpath %classpath di.uniba.it.tri.script.BuildSimStatistics /home/pierpaolo/data/tri/twitter_en_one_week/ /home/pierpaolo/data/tri/twitter_en_one_week_plot.tsv</exec.args>
+                <exec.args>-Xmx6g -classpath %classpath di.uniba.it.tri.shell.gui.TriShellGUI</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>
@@ -24,7 +24,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -Xmx6g -classpath %classpath di.uniba.it.tri.script.BuildSimStatistics /home/pierpaolo/data/tri/twitter_en_one_week/ /home/pierpaolo/data/tri/twitter_en_one_week_plot.tsv</exec.args>
+                <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -Xmx6g -classpath %classpath di.uniba.it.tri.shell.gui.TriShellGUI</exec.args>
                 <exec.executable>java</exec.executable>
                 <jpda.listen>true</jpda.listen>
             </properties>
@@ -39,7 +39,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xmx6g -classpath %classpath di.uniba.it.tri.script.BuildSimStatistics /home/pierpaolo/data/tri/twitter_en_one_week/ /home/pierpaolo/data/tri/twitter_en_one_week_plot.tsv</exec.args>
+                <exec.args>-Xmx6g -classpath %classpath di.uniba.it.tri.shell.gui.TriShellGUI</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>

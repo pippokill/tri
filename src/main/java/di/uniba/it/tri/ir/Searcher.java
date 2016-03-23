@@ -6,10 +6,15 @@
 package di.uniba.it.tri.ir;
 
 import di.uniba.it.tri.occ.OccUtils;
+import di.uniba.it.tri.vectors.Vector;
+import di.uniba.it.tri.vectors.VectorFactory;
+import di.uniba.it.tri.vectors.VectorReader;
+import di.uniba.it.tri.vectors.VectorType;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -17,8 +22,10 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -176,6 +183,70 @@ public class Searcher {
                 Logger.getLogger(Searcher.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+        return results;
+    }
+
+    private List<String> getTokens(String text) throws IOException {
+        List<String> tokens = new ArrayList<>();
+        TokenStream tokenStream = analyzer.tokenStream("text", text);
+        tokenStream.reset();
+        CharTermAttribute cattr = tokenStream.addAttribute(CharTermAttribute.class);
+        while (tokenStream.incrementToken()) {
+            String token = cattr.toString();
+            tokens.add(token);
+        }
+        tokenStream.end();
+        tokenStream.close();
+        return tokens;
+    }
+
+    private Vector buildVector(String text, VectorReader vr) throws IOException {
+        List<String> tokens = getTokens(text);
+        Vector dv = VectorFactory.createZeroVector(VectorType.REAL, vr.getDimension());
+        for (String t : tokens) {
+            Vector v = vr.getVector(t);
+            if (v != null) {
+                dv.superpose(v, 1, null);
+            }
+        }
+        if (!dv.isZeroVector()) {
+            dv.normalize();
+        }
+        return dv;
+    }
+
+    public List<SearchResult> search(String query, int topn, Date start, Date end, VectorReader vr) throws ParseException, IOException {
+        List<SearchResult> results = new ArrayList<>();
+        query = QueryParser.escape(query);
+        QueryParser qp = new MultiFieldQueryParser(textFieldname, analyzer);
+        Query qtext = qp.parse(query);
+        Query qtime = NumericRangeQuery.newLongRange("time", start.getTime(), end.getTime(), true, true);
+        BooleanQuery q = new BooleanQuery();
+        q.add(qtext, BooleanClause.Occur.MUST);
+        q.add(qtime, BooleanClause.Occur.MUST);
+        TopDocs topDocs = searcher.search(q, topn);
+        for (int i = 0; i < topDocs.scoreDocs.length; i++) {
+            SearchResult sr = new SearchResult(topDocs.scoreDocs[i].doc, topDocs.scoreDocs[i].score);
+            Document doc = searcher.doc(sr.getDocid());
+            sr.setId(doc.get(idFieldname));
+            sr.setSource(doc.get(sourceFieldname));
+            StringBuilder sb = new StringBuilder();
+            for (String fn : textFieldname) {
+                sb.append(doc.get(fn)).append("\n");
+            }
+            sr.setText(sb.toString());
+            Vector queryVector = buildVector(query, vr);
+            Vector dv = buildVector(sr.getText(), vr);
+            sr.setScore((float) queryVector.measureOverlap(dv));
+            results.add(sr);
+            try {
+                Date date = dateFormat.parse(doc.get(dateFieldname));
+                sr.setDate(date);
+            } catch (java.text.ParseException ex) {
+                Logger.getLogger(Searcher.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        Collections.sort(results);
         return results;
     }
 
