@@ -547,6 +547,22 @@ public class Tri {
             VectorReader vr = TemporalSpaceUtils.getVectorReader(mainDir, ys, false);
             for (int i = 0; i < terms.length; i++) {
                 Vector v = vr.getVector(terms[i]);
+                if (v == null && terms[i].contains("_")) {
+                    String[] split = terms[i].split("_");
+                    v = VectorFactory.createZeroVector(VectorType.REAL, dimension);
+                    for (String s : split) {
+                        Vector vs = vr.getVector(s);
+                        if (vs != null) {
+                            v.superpose(vs, 1, null);
+                        } else {
+                            v = null;
+                            break;
+                        }
+                    }
+                    if (v != null && !v.isZeroVector()) {
+                        v.normalize();
+                    }
+                }
                 if (v != null) {
                     Vector copy = precv.get(i).copy();
                     copy.superpose(v, 1, null);
@@ -578,11 +594,43 @@ public class Tri {
             VectorReader vr = TemporalSpaceUtils.getVectorReader(mainDir, ys, false);
             vr.init();
             Vector v = vr.getVector(term1);
+            if (v == null && term1.contains("_")) {
+                String[] split = term1.split("_");
+                v = VectorFactory.createZeroVector(VectorType.REAL, dimension);
+                for (String s : split) {
+                    Vector vs = vr.getVector(s);
+                    if (vs != null) {
+                        v.superpose(vs, 1, null);
+                    } else {
+                        v = null;
+                        break;
+                    }
+                }
+                if (v != null && !v.isZeroVector()) {
+                    v.normalize();
+                }
+            }
             if (v != null) {
                 v1.superpose(v, 1, null);
                 v1.normalize();
             }
             v = vr.getVector(term2);
+            if (v == null && term2.contains("_")) {
+                String[] split = term2.split("_");
+                v = VectorFactory.createZeroVector(VectorType.REAL, dimension);
+                for (String s : split) {
+                    Vector vs = vr.getVector(s);
+                    if (vs != null) {
+                        v.superpose(vs, 1, null);
+                    } else {
+                        v = null;
+                        break;
+                    }
+                }
+                if (v != null && !v.isZeroVector()) {
+                    v.normalize();
+                }
+            }
             if (v != null) {
                 v2.superpose(v, 1, null);
                 v2.normalize();

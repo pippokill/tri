@@ -8,6 +8,7 @@ package di.uniba.it.tri.api.rest;
 import di.uniba.it.tri.api.Tri;
 import di.uniba.it.tri.api.TriResultObject;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +51,7 @@ public class SimpleTriServerWrapper {
 
     public JSONObject words(String[] terms) throws Exception {
         for (int i = 0; i < terms.length; i++) {
-            terms[i] = terms[i].replaceAll("\\s+", "_");
+            terms[i] = terms[i].trim().replaceAll("\\s+", "_");
         }
         List<TriResultObject> results = api.plotWord(terms);
         Map<String, List<TimeScore>> map = new HashMap<>();
@@ -73,10 +74,15 @@ public class SimpleTriServerWrapper {
             JSONObject p = new JSONObject();
             JSONArray elements = new JSONArray();
             List<TimeScore> l = map.get(a);
-            for (TimeScore tm : l) {
+            Collections.sort(l);
+            for (int k = 1; k < l.size(); k++) {
                 JSONObject tmo = new JSONObject();
-                tmo.put("value", tm.getScore());
-                tmo.put("date", tm.getYear() + "-01-01");
+                if (l.get(k).getScore() >= 0) {
+                    tmo.put("value", l.get(k).getScore());
+                } else {
+                    tmo.put("value", 0);
+                }
+                tmo.put("date", l.get(k).getYear() + "-01-01");
                 elements.add(tmo);
             }
             p.put("elements", elements);
@@ -88,7 +94,9 @@ public class SimpleTriServerWrapper {
     }
 
     public JSONObject wordsSim(String term1, String term2) throws Exception {
-        List<TriResultObject> results = api.plotWords(term1.trim().replaceAll("\\s+", "_"), term2.trim().replaceAll("\\s+", "_"));
+        term1 = term1.trim().replaceAll("\\s+", "_");
+        term2 = term2.trim().replaceAll("\\s+", "_");
+        List<TriResultObject> results = api.plotWords(term1, term2);
         JSONObject m = new JSONObject();
         JSONArray authors = new JSONArray();
         authors.add(term1 + "-" + term2);
@@ -97,7 +105,11 @@ public class SimpleTriServerWrapper {
         JSONArray elements = new JSONArray();
         for (TriResultObject r : results) {
             JSONObject tmo = new JSONObject();
-            tmo.put("value", r.getScore());
+            if (r.getScore() >= 0) {
+                tmo.put("value", r.getScore());
+            } else {
+                tmo.put("value", 0);
+            }
             String[] split = r.getValue().split("\t");
             tmo.put("date", split[0] + "-01-01");
             elements.add(tmo);
