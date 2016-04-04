@@ -93,29 +93,39 @@ public class SimpleTriServerWrapper {
         return m;
     }
 
-    public JSONObject wordsSim(String term1, String term2) throws Exception {
-        term1 = term1.trim().replaceAll("\\s+", "_");
-        term2 = term2.trim().replaceAll("\\s+", "_");
-        List<TriResultObject> results = api.plotWords(term1, term2);
+    public JSONObject wordsSim(String[] terms) throws Exception {
+        for (int i = 0; i < terms.length; i++) {
+            terms[i] = terms[i].trim().replaceAll("\\s+", "_");
+        }
+        if (terms.length % 2 != 0) {
+            throw new IllegalArgumentException("No valid parameters: terms size (" + terms.length + ").");
+        }
+        Map<String, List<TriResultObject>> map = new HashMap<>();
+        for (int i = 0; i < terms.length; i = i + 2) {
+            List<TriResultObject> results = api.plotWords(terms[i], terms[i + 1]);
+            map.put(terms[i] + "-" + terms[i + 1], results);
+        }
         JSONObject m = new JSONObject();
         JSONArray authors = new JSONArray();
-        authors.add(term1 + "-" + term2);
         JSONObject data = new JSONObject();
-        JSONObject p = new JSONObject();
-        JSONArray elements = new JSONArray();
-        for (TriResultObject r : results) {
-            JSONObject tmo = new JSONObject();
-            if (r.getScore() >= 0) {
-                tmo.put("value", r.getScore());
-            } else {
-                tmo.put("value", 0);
+        for (Map.Entry<String, List<TriResultObject>> entry : map.entrySet()) {
+            JSONObject p = new JSONObject();
+            authors.add(entry.getKey());
+            JSONArray elements = new JSONArray();
+            for (TriResultObject r : entry.getValue()) {
+                JSONObject tmo = new JSONObject();
+                if (r.getScore() >= 0) {
+                    tmo.put("value", r.getScore());
+                } else {
+                    tmo.put("value", 0);
+                }
+                String[] split = r.getValue().split("\t");
+                tmo.put("date", split[0] + "-01-01");
+                elements.add(tmo);
             }
-            String[] split = r.getValue().split("\t");
-            tmo.put("date", split[0] + "-01-01");
-            elements.add(tmo);
+            p.put("elements", elements);
+            data.put(entry.getKey(), p);
         }
-        p.put("elements", elements);
-        data.put(term1 + "-" + term2, p);
         m.put("authors", authors);
         m.put("data", data);
         return m;

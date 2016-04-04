@@ -63,11 +63,24 @@ public class SimpleTriRest {
         }
     }
 
-    @GET
+    /*@GET
     @Path("wordsSim/{t1}/{t2}")
     public Response wordsSim(@PathParam("t1") String term1, @PathParam("t2") String term2) {
         try {
             JSONObject json = SimpleTriServerWrapper.getInstance().wordsSim(term1, term2);
+            return Response.ok(json.toJSONString()).build();
+        } catch (Exception ex) {
+            Logger.getLogger(SimpleTriRest.class.getName()).log(Level.SEVERE, null, ex);
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(ex.getMessage()).type("text/plain").build();
+        }
+    }*/
+    
+    @GET
+    @Path("wordsSim/{s}")
+    public Response wordsSim(@PathParam("s") String s) {
+        try {
+            String[] split = s.split(",");
+            JSONObject json = SimpleTriServerWrapper.getInstance().wordsSim(split);
             return Response.ok(json.toJSONString()).build();
         } catch (Exception ex) {
             Logger.getLogger(SimpleTriRest.class.getName()).log(Level.SEVERE, null, ex);
