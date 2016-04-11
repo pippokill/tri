@@ -579,6 +579,54 @@ public class Tri {
         return list;
     }
 
+    public List<TriResultObject> plotWordSinglePoint(String[] terms) throws Exception {
+        if (mainDir == null) {
+            throw new Exception("No main dir set");
+        }
+        List<String> availableYears = TemporalSpaceUtils.getAvailableYears(mainDir, -Integer.MAX_VALUE, Integer.MAX_VALUE);
+        Collections.sort(availableYears);
+        //just read vector dimension
+        VectorReader vrd = TemporalSpaceUtils.getVectorReader(mainDir, availableYears.get(0), false);
+        vrd.init();
+        int dimension = vrd.getDimension();
+        vrd.close();
+        List<Vector> precv = new ArrayList<>();
+        for (int i = 0; i < terms.length; i++) {
+            precv.add(VectorFactory.createZeroVector(VectorType.REAL, dimension));
+        }
+        List<TriResultObject> list = new ArrayList<>();
+        for (String ys : availableYears) {
+            VectorReader vr = TemporalSpaceUtils.getVectorReader(mainDir, ys, false);
+            for (int i = 0; i < terms.length; i++) {
+                Vector v = vr.getVector(terms[i]);
+                if (v == null && terms[i].contains("_")) {
+                    String[] split = terms[i].split("_");
+                    v = VectorFactory.createZeroVector(VectorType.REAL, dimension);
+                    for (String s : split) {
+                        Vector vs = vr.getVector(s);
+                        if (vs != null) {
+                            v.superpose(vs, 1, null);
+                        } else {
+                            v = null;
+                            break;
+                        }
+                    }
+                    if (v != null && !v.isZeroVector()) {
+                        v.normalize();
+                    }
+                }
+                if (v != null) {
+                    list.add(new TriResultObject(ys + "\t" + terms[i], (float) v.measureOverlap(precv.get(i))));
+                    precv.set(i, v);
+                } else {
+                    list.add(new TriResultObject(ys + "\t" + terms[i], 0));
+                }
+            }
+            vr.close();
+        }
+        return list;
+    }
+
     public List<TriResultObject> plotWords(String term1, String term2) throws Exception {
         List<String> availableYears = TemporalSpaceUtils.getAvailableYears(mainDir, -Integer.MAX_VALUE, Integer.MAX_VALUE);
         Collections.sort(availableYears);

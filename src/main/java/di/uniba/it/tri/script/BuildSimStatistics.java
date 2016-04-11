@@ -107,7 +107,11 @@ public class BuildSimStatistics {
                 writer.append(key);
                 list.remove(0);
                 for (TriResultObject r : list) {
-                    writer.append("\t").append(String.valueOf(r.getScore()));
+                    if (r.getScore() >= 0) {
+                        writer.append("\t").append(String.valueOf(r.getScore()));
+                    } else {
+                        writer.append("\t").append(String.valueOf(0f));
+                    }
                 }
                 writer.newLine();
                 c++;

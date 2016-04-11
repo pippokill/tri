@@ -53,7 +53,7 @@ public class SimpleTriServerWrapper {
         for (int i = 0; i < terms.length; i++) {
             terms[i] = terms[i].trim().replaceAll("\\s+", "_");
         }
-        List<TriResultObject> results = api.plotWord(terms);
+        List<TriResultObject> results = api.plotWordSinglePoint(terms);
         Map<String, List<TimeScore>> map = new HashMap<>();
         for (TriResultObject o : results) {
             String[] split = o.getValue().split("\t");
