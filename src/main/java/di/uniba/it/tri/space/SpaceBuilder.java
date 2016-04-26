@@ -66,29 +66,33 @@ import org.apache.commons.cli.ParseException;
  * @author pierpaolo
  */
 public class SpaceBuilder {
-
+    
     private static final Logger logger = Logger.getLogger(SpaceBuilder.class.getName());
-
+    
     private int dimension = 200;
-
+    
     private int seed = 10;
-
+    
     private File startingDir;
-
+    
     private int size = 100000;
-
+    
     private double sample = 1e-3;
-
+    
+    private boolean normalize = false;
+    
+    private boolean self = false;
+    
     public double getSample() {
         return sample;
     }
-
+    
     public void setSample(double sample) {
         this.sample = sample;
     }
-
+    
     private long totalOcc = 0;
-
+    
     private Random randomDown;
 
     /**
@@ -184,7 +188,23 @@ public class SpaceBuilder {
     public void setSize(int size) {
         this.size = size;
     }
-
+    
+    public boolean isNormalize() {
+        return normalize;
+    }
+    
+    public void setNormalize(boolean normalize) {
+        this.normalize = normalize;
+    }
+    
+    public boolean isSelf() {
+        return self;
+    }
+    
+    public void setSelf(boolean self) {
+        this.self = self;
+    }
+    
     private boolean subsampling(int wordCount) {
         if (sample > 0) {
             double pw = (Math.sqrt((double) wordCount / (sample * (double) totalOcc)) + 1) * (sample * (double) totalOcc) / (double) wordCount;
@@ -205,6 +225,8 @@ public class SpaceBuilder {
         }
         Map<String, Integer> dict = buildDictionary(startingDir, size);
         logger.log(Level.INFO, "Dictionary size {0}", dict.size());
+        logger.log(Level.INFO, "Use self random vector: {0}", self);
+        logger.log(Level.INFO, "Normalize score: {0}", normalize);
         Map<String, Vector> elementalSpace = new HashMap<>();
         //create random vectors space
         logger.info("Building elemental vectors...");
@@ -229,7 +251,18 @@ public class SpaceBuilder {
                 split = reader.readLine().split("\t");
                 String token = split[0];
                 if (elementalSpace.containsKey(token)) {
-                    Vector v = VectorFactory.createZeroVector(VectorType.REAL, dimension);
+                    Vector v;
+                    if (self) {
+                        v = elementalSpace.get(token).copy();
+                    } else {
+                        v = VectorFactory.createZeroVector(VectorType.REAL, dimension);
+                    }
+                    double norm = 0;
+                    if (normalize) {
+                        for (int i = 2; i < split.length; i = i + 2) {
+                            norm += Double.parseDouble(split[i]);
+                        }
+                    }
                     int i = 1;
                     while (i < split.length) {
                         String word = split[i];
@@ -237,9 +270,13 @@ public class SpaceBuilder {
                         if (ev != null) {
                             int coocc = Integer.parseInt(split[i + 1]);
                             double w = 0;
-                            for (int k = 0; k < coocc; k++) {
-                                if (!subsampling(dict.get(word))) {
-                                    w++;
+                            if (normalize) {
+                                w = (double) coocc / norm;
+                            } else {
+                                for (int k = 0; k < coocc; k++) {
+                                    if (!subsampling(dict.get(word))) {
+                                        w++;
+                                    }
                                 }
                             }
                             v.superpose(ev, w, null);
@@ -259,7 +296,7 @@ public class SpaceBuilder {
         logger.log(Level.INFO, "Save elemental vectors in dir: {0}", outputDir.getAbsolutePath());
         VectorStoreUtils.saveSpace(new File(outputDir.getAbsolutePath() + "/vectors.elemental"), elementalSpace, VectorType.REAL, dimension, seed);
     }
-
+    
     private Map<String, Integer> buildDictionary(File startingDir, int maxSize) throws IOException {
         logger.log(Level.INFO, "Building dictionary: {0}", startingDir.getAbsolutePath());
         Map<String, Integer> cmap = new HashMap<>();
@@ -301,11 +338,11 @@ public class SpaceBuilder {
         }
         return dict;
     }
-
+    
     static Options options;
-
+    
     static CommandLineParser cmdParser = new BasicParser();
-
+    
     static {
         options = new Options();
         options.addOption("c", true, "The directory containing the co-occurrences matrices")
@@ -313,7 +350,9 @@ public class SpaceBuilder {
                 .addOption("d", true, "The vector dimension (optional, defaults 300)")
                 .addOption("s", true, "The number of seeds (optional, defaults 10)")
                 .addOption("v", true, "The dictionary size (optional, defaults 100000)")
-                .addOption("ds", true, "Down sampling factor (optional, defaults 0.001)");
+                .addOption("ds", true, "Down sampling factor (optional, defaults 0.001)")
+                .addOption("norm", true, "Normalize occurrence (optinal, defaults false)")
+                .addOption("self", true, "Inizialize using random vector (optinal, defaults false)");
     }
 
     /**
@@ -331,6 +370,8 @@ public class SpaceBuilder {
                     builder.setSeed(Integer.parseInt(cmd.getOptionValue("s", "10")));
                     builder.setSize(Integer.parseInt(cmd.getOptionValue("v", "100000")));
                     builder.setSample(Double.parseDouble(cmd.getOptionValue("ds", "1e-3")));
+                    builder.setNormalize(Boolean.parseBoolean(cmd.getOptionValue("norm", "false")));
+                    builder.setSelf(Boolean.parseBoolean(cmd.getOptionValue("self", "false")));
                     builder.build(new File(cmd.getOptionValue("o")));
                 } catch (IOException | NumberFormatException ex) {
                     logger.log(Level.SEVERE, null, ex);
