@@ -34,7 +34,7 @@
  */
 package di.uniba.it.tri.script;
 
-import di.uniba.it.tri.TemporalSpaceUtils;
+import di.uniba.it.tri.space.TemporalSpaceUtils;
 import di.uniba.it.tri.api.Tri;
 import di.uniba.it.tri.api.TriResultObject;
 import di.uniba.it.tri.vectors.Vector;

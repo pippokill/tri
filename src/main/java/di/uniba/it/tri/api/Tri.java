@@ -34,9 +34,9 @@
  */
 package di.uniba.it.tri.api;
 
-import di.uniba.it.tri.ClusterComparator;
-import di.uniba.it.tri.Clusters;
-import di.uniba.it.tri.TemporalSpaceUtils;
+import di.uniba.it.tri.space.custering.ClusterComparator;
+import di.uniba.it.tri.space.custering.Clusters;
+import di.uniba.it.tri.space.TemporalSpaceUtils;
 import di.uniba.it.tri.vectors.FileVectorReader;
 import di.uniba.it.tri.vectors.MemoryVectorReader;
 import di.uniba.it.tri.vectors.ObjectVector;

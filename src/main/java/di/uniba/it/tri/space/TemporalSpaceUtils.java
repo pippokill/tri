@@ -32,8 +32,9 @@
  * GNU GENERAL PUBLIC LICENSE - Version 3, 29 June 2007
  *
  */
-package di.uniba.it.tri;
+package di.uniba.it.tri.space;
 
+import di.uniba.it.tri.space.custering.Clusters;
 import di.uniba.it.tri.shell.TriShell;
 import di.uniba.it.tri.vectors.FileVectorReader;
 import di.uniba.it.tri.vectors.MapVectorReader;

@@ -34,7 +34,7 @@
  */
 package di.uniba.it.tri.shell;
 
-import di.uniba.it.tri.TemporalSpaceUtils;
+import di.uniba.it.tri.space.TemporalSpaceUtils;
 import di.uniba.it.tri.vectors.FileVectorReader;
 import di.uniba.it.tri.vectors.MemoryVectorReader;
 import di.uniba.it.tri.vectors.ObjectVector;
