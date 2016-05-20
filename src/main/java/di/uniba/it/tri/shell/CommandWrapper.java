@@ -127,6 +127,8 @@ public class CommandWrapper {
             plot(command);
         } else if (command.matches("(^cluster$)|(^cluster\\s+.*$)")) {
             cluster(command);
+        } else if (command.matches("(^rmean$)|(^rmean\\s+.*$)")) {
+            rmean(command);
         } else {
             throw new Exception("Unknown command: " + command);
         }
@@ -610,6 +612,15 @@ public class CommandWrapper {
         }
     }
 
+    private void rmean(String cmd) throws Exception {
+        String[] split = cmd.split("\\s+");
+        if (split.length == 3) {
+            tri.removeMean(split[1], split[2]);
+        } else {
+            throw new Exception("No valid rmean command");
+        }
+    }
+
     private void initHelp() {
         help.setProperty("set", "set <main dir> - set the main directory in which WordSpaces are stored");
         help.setProperty("index", "index <file|mem> <name> - create a words index from a vector reader using a filename (file) or a previous reader loaded in memory (mem)");
@@ -630,6 +641,7 @@ public class CommandWrapper {
         help.setProperty("ftri", "ftri <output filename> <start year> <end year> - create a new temporal space form start_year to end_year and save it on disk");
         help.setProperty("sims", "sims <number of results> <vector reader name1> <vector reader name2> <min>? <max>?  - find words that change meaning between two WordSpaces. Min and max are used as thresholds for filtering results (optional).");
         help.setProperty("compare", "compare <number of results> <vector reader name1> <vector reader name1> <vector name1> <vector name2> - compare nearest vectors of vector name1 in vector reader name1 and vector name2 in vector reader name2");
+        help.setProperty("rmean", "rmean <vector reader> <vector name> - remove mean component from vector");
         //help of commands related to sets
         help.setProperty("cset", "cset <name> - create a new set");
         help.setProperty("aset", "aset <name> <word>+ - add words to a set");

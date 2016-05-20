@@ -40,6 +40,7 @@ import di.uniba.it.tri.vectors.FileVectorReader;
 import di.uniba.it.tri.vectors.MapVectorReader;
 import di.uniba.it.tri.vectors.MemoryVectorReader;
 import di.uniba.it.tri.vectors.ObjectVector;
+import di.uniba.it.tri.vectors.RealVector;
 import di.uniba.it.tri.vectors.ReverseObjectVectorComparator;
 import di.uniba.it.tri.vectors.Vector;
 import di.uniba.it.tri.vectors.VectorFactory;
@@ -438,6 +439,8 @@ public class TemporalSpaceUtils {
      * @param store1 The first Vector Reader
      * @param store2 The second Vector Reader
      * @param n The number of vectors
+     * @param min min threshold
+     * @param max max threshold
      * @return The list of less n similar vectors
      * @throws IOException
      */
@@ -517,7 +520,7 @@ public class TemporalSpaceUtils {
         reader.close();
         return set;
     }
-    
+
     public static Clusters kMeansCluster(VectorReader vr, List<ObjectVector> objectVectors, int k) throws IOException {
         Clusters clusters = new Clusters(new int[objectVectors.size()], new Vector[k]);
         Random rand = new Random();
@@ -542,7 +545,7 @@ public class TemporalSpaceUtils {
             for (int i = 0; i < k; ++i) {
                 clusters.getCentroids()[i].normalize();
             }
-            
+
             boolean changeFlag = false;
             // Map items to clusters.
             for (int i = 0; i < objectVectors.size(); i++) {
@@ -556,8 +559,25 @@ public class TemporalSpaceUtils {
                 clustering = false;
             }
         }
-        
+
         return clusters;
     }
-    
+
+    public static Vector computeMeanVector(VectorReader vr) throws IOException {
+        Iterator<ObjectVector> allVectors = vr.getAllVectors();
+        Vector mean = VectorFactory.createZeroVector(VectorType.REAL, vr.getDimension());
+        float n = 0;
+        while (allVectors.hasNext()) {
+            ObjectVector next = allVectors.next();
+            mean.superpose(next.getVector(), 1, null);
+            n++;
+        }
+        float[] mv = ((RealVector) mean).getCoordinates();
+        for (int i = 0; i < mv.length; i++) {
+            mv[i] /= n;
+        }
+        mean = new RealVector(mv);
+        return mean;
+    }
+
 }

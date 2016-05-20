@@ -81,6 +81,8 @@ public class Tri {
 
     private final Map<String, VectorReader> stores = new HashMap<>();
 
+    private final Map<String, Vector> meanStore = new HashMap<>();
+
     private final Map<String, Vector> vectors = new HashMap<>();
 
     private final Map<String, Set<String>> setmap = new HashMap<>();
@@ -95,6 +97,10 @@ public class Tri {
 
     public Map<String, Vector> getVectors() {
         return vectors;
+    }
+
+    public Map<String, Vector> getMeanStore() {
+        return meanStore;
     }
 
     public Map<String, Set<String>> getSetmap() {
@@ -232,6 +238,8 @@ public class Tri {
                 stores.get(name).close();
             }
             stores.put(name, vr);
+            Vector meanVector = TemporalSpaceUtils.computeMeanVector(vr);
+            meanStore.put(name, meanVector);
         } else if (type.equals("file")) {
             vr = new FileVectorReader(file);
             vr.init();
@@ -239,6 +247,8 @@ public class Tri {
                 stores.get(name).close();
             }
             stores.put(name, vr);
+            Vector meanVector = TemporalSpaceUtils.computeMeanVector(vr);
+            meanStore.put(name, meanVector);
         } else {
             throw new Exception("not valid vector reader type");
         }
@@ -246,10 +256,12 @@ public class Tri {
 
     public void clearStores() {
         stores.clear();
+        meanStore.clear();
     }
 
     public void clearStore(String name) {
         stores.remove(name);
+        meanStore.remove(name);
     }
 
     public void clearVectors() {
@@ -275,6 +287,7 @@ public class Tri {
             for (String vector : vectors) {
                 Vector wv = vr.getVector(vector);
                 if (wv != null) {
+                    //wv.superpose(meanStore.get(vectorstoreName), -1, null);
                     v.superpose(wv, 1, null);
                     addedVectors.add(vector);
                 }
@@ -336,6 +349,7 @@ public class Tri {
             vr.close();
         }
         stores.clear();
+        meanStore.clear();
         vectors.clear();
         if (reader != null) {
             reader.close();
@@ -505,6 +519,7 @@ public class Tri {
         for (String word : set) {
             Vector wv = vr.getVector(word);
             if (wv != null) {
+                //wv.superpose(meanStore.get(vectorstoreName), -1, null);
                 v.superpose(wv, 1, null);
             } else {
                 throw new Exception("no vector for: " + word);
@@ -571,7 +586,7 @@ public class Tri {
                     precv.get(i).superpose(v, 1, null);
                     precv.get(i).normalize();
                 } else {
-                    list.add(new TriResultObject(ys + "\t" + terms[i], -1));
+                    list.add(new TriResultObject(ys + "\t" + terms[i], 0));
                 }
             }
             vr.close();
@@ -724,5 +739,17 @@ public class Tri {
             throw new Exception("Vector reader " + vectorName + " not found");
         }
 
+    }
+
+    public void removeMean(String vectorReadername, String vectorname) throws Exception {
+        Vector v = vectors.get(vectorname);
+        if (v == null) {
+            throw new Exception("No valid vector: " + vectorname);
+        }
+        Vector mv = meanStore.get(vectorReadername);
+        if (mv == null) {
+            throw new Exception("No valid vector reader: " + vectorReadername);
+        }
+        v.superpose(mv, -1, null);
     }
 }
