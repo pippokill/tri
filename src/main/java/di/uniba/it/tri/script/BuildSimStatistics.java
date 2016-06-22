@@ -52,12 +52,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.commons.cli.BasicParser;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
 
 /**
  *
  * @author pierpaolo
  */
 public class BuildSimStatistics {
+
+    static Options options;
+
+    static CommandLineParser cmdParser = new BasicParser();
+
+    static {
+        options = new Options();
+        options.addOption("i", true, "Input directory")
+                .addOption("o", true, "Output file")
+                .addOption("f", true, "Output format plain or csv (default=plain)");
+    }
 
     /**
      * base_dir_1 output_file_1
@@ -66,61 +82,85 @@ public class BuildSimStatistics {
      */
     public static void main(String[] args) {
         try {
-            Tri api = new Tri();
-            api.setMaindir(args[0]);
-            api.load("file", null, "-1");
-            BufferedWriter writer = new BufferedWriter(new FileWriter(args[1]));
-            VectorReader evr = api.getStores().get(Tri.ELEMENTAL_NAME);
-            Iterator<String> keys = evr.getKeys();
-            int c = 0;
-            System.out.println();
-            List<String> availableYears = TemporalSpaceUtils.getAvailableYears(new File(args[0]), -Integer.MAX_VALUE, Integer.MAX_VALUE);
-            Collections.sort(availableYears);
-            Map<String, VectorReader> vrmap = new HashMap<>();
-            //just read vector dimension
-            for (String year : availableYears) {
-                System.out.println("Loading " + year);
-                VectorReader vrd = TemporalSpaceUtils.getVectorReader(new File(args[0]), year, true);
-                vrd.init();
-                vrmap.put(year, vrd);
-            }
-            int dimension = evr.getDimension();
-            long time = System.currentTimeMillis();
-            while (keys.hasNext()) {
-                String key = keys.next();
-                Vector precv = VectorFactory.createZeroVector(VectorType.REAL, dimension);
-                List<TriResultObject> list = new ArrayList<>();
-                for (String ys : availableYears) {
-                    VectorReader vr = vrmap.get(ys);
-                    Vector v = vr.getVector(key);
-                    if (v != null) {
-                        Vector copy = precv.copy();
-                        copy.superpose(v, 1, null);
-                        copy.normalize();
-                        list.add(new TriResultObject(ys + "\t" + key, (float) copy.measureOverlap(precv)));
-                        precv.superpose(v, 1, null);
-                        precv.normalize();
-                    } else {
-                        list.add(new TriResultObject(ys + "\t" + key, -1));
+            CommandLine cmd = cmdParser.parse(options, args);
+            if (cmd.hasOption("i") && cmd.hasOption("o")) {
+                String format = cmd.getOptionValue("f", "plain");
+                Tri api = new Tri();
+                api.setMaindir(cmd.getOptionValue("i"));
+                api.load("file", null, "-1");
+                char sep = '\t';
+                BufferedWriter writer = new BufferedWriter(new FileWriter(cmd.getOptionValue("o")));
+                if (format.equals("csv")) {
+                    writer.append(",word");
+                    List<String> years = api.year(0, Integer.MAX_VALUE);
+                    for (String year : years) {
+                        writer.append(",");
+                        writer.append(year);
                     }
+                    writer.newLine();
+                    sep = ',';
                 }
-                writer.append(key);
-                list.remove(0);
-                for (TriResultObject r : list) {
-                    if (r.getScore() >= 0) {
-                        writer.append("\t").append(String.valueOf(r.getScore()));
-                    } else {
-                        writer.append("\t").append(String.valueOf(0f));
+                VectorReader evr = api.getStores().get(Tri.ELEMENTAL_NAME);
+                Iterator<String> keys = evr.getKeys();
+                int c = 0;
+                System.out.println();
+                List<String> availableYears = TemporalSpaceUtils.getAvailableYears(new File(cmd.getOptionValue("i")), -Integer.MAX_VALUE, Integer.MAX_VALUE);
+                Collections.sort(availableYears);
+                Map<String, VectorReader> vrmap = new HashMap<>();
+                //just read vector dimension
+                for (String year : availableYears) {
+                    System.out.println("Loading " + year);
+                    VectorReader vrd = TemporalSpaceUtils.getVectorReader(new File(cmd.getOptionValue("i")), year, true);
+                    vrd.init();
+                    vrmap.put(year, vrd);
+                }
+                int dimension = evr.getDimension();
+                long time = System.currentTimeMillis();
+                int id=0;
+                while (keys.hasNext()) {
+                    String key = keys.next();
+                    Vector precv = VectorFactory.createZeroVector(VectorType.REAL, dimension);
+                    List<TriResultObject> list = new ArrayList<>();
+                    for (String ys : availableYears) {
+                        VectorReader vr = vrmap.get(ys);
+                        Vector v = vr.getVector(key);
+                        if (v != null) {
+                            Vector copy = precv.copy();
+                            copy.superpose(v, 1, null);
+                            copy.normalize();
+                            list.add(new TriResultObject(ys + "\t" + key, (float) copy.measureOverlap(precv)));
+                            precv.superpose(v, 1, null);
+                            precv.normalize();
+                        } else {
+                            list.add(new TriResultObject(ys + "\t" + key, -1));
+                        }
                     }
+                    if (format.equals("csv")) {
+                        writer.append(String.valueOf(id));
+                        writer.append(sep);
+                    }
+                    writer.append(key);
+                    list.remove(0);
+                    for (TriResultObject r : list) {
+                        if (r.getScore() >= 0) {
+                            writer.append(sep).append(String.valueOf(r.getScore()));
+                        } else {
+                            writer.append(sep).append(String.valueOf(0f));
+                        }
+                    }
+                    writer.newLine();
+                    c++;
+                    if (c % 10000 == 0) {
+                        System.out.println("Processed " + c + " words\t" + ((System.currentTimeMillis() - time) / 100) + " sec.");
+                        time = System.currentTimeMillis();
+                    }
+                    id++;
                 }
-                writer.newLine();
-                c++;
-                if (c % 10000 == 0) {
-                    System.out.println("Processed " + c + " words\t" + ((System.currentTimeMillis() - time) / 100) + " sec.");
-                    time = System.currentTimeMillis();
-                }
+                writer.close();
+            } else {
+                HelpFormatter helpFormatter = new HelpFormatter();
+                helpFormatter.printHelp("Build sim matrix", options, true);
             }
-            writer.close();
         } catch (Exception ex) {
             Logger.getLogger(BuildSimStatistics.class.getName()).log(Level.SEVERE, null, ex);
         }

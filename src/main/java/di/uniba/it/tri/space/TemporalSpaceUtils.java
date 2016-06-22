@@ -283,7 +283,9 @@ public class TemporalSpaceUtils {
         File[] listFiles = startDir.listFiles();
         for (File file : listFiles) {
             if (file.getName().endsWith(".vectors")) {
-                String stringYear = file.getName().replaceAll("count_", "").replaceAll(".vectors", "");
+                String name = file.getName().replaceAll(".vectors", "");
+                String[] split = name.split("_");
+                String stringYear = split[split.length-1];
                 int year = Integer.parseInt(stringYear);
                 if (year >= start && year <= end) {
                     list.add(file);
@@ -307,7 +309,9 @@ public class TemporalSpaceUtils {
         File[] listFiles = startDir.listFiles();
         for (File file : listFiles) {
             if (file.getName().endsWith(".vectors")) {
-                String stringYear = file.getName().replaceAll("count_", "").replaceAll(".vectors", "");
+                String name = file.getName().replaceAll(".vectors", "");
+                String[] split = name.split("_");
+                String stringYear = split[split.length-1];
                 int year = Integer.parseInt(stringYear);
                 if (year >= start && year <= end) {
                     list.add(stringYear);

@@ -35,6 +35,7 @@
 package di.uniba.it.tri.space;
 
 import di.uniba.it.tri.data.DictionaryEntry;
+import di.uniba.it.tri.vectors.MemoryVectorReader;
 import di.uniba.it.tri.vectors.Vector;
 import di.uniba.it.tri.vectors.VectorFactory;
 import di.uniba.it.tri.vectors.VectorStoreUtils;
@@ -47,6 +48,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
@@ -65,9 +67,9 @@ import org.apache.commons.cli.ParseException;
  *
  * @author pierpaolo
  */
-public class SpaceBuilder {
+public class SpaceBuilderReflective {
 
-    private static final Logger logger = Logger.getLogger(SpaceBuilder.class.getName());
+    private static final Logger logger = Logger.getLogger(SpaceBuilderReflective.class.getName());
 
     private int dimension = 200;
 
@@ -89,7 +91,7 @@ public class SpaceBuilder {
      *
      * @param startingDir
      */
-    public SpaceBuilder(File startingDir) {
+    public SpaceBuilderReflective(File startingDir) {
         this.startingDir = startingDir;
     }
 
@@ -98,7 +100,7 @@ public class SpaceBuilder {
      * @param startingDir
      * @param dimension
      */
-    public SpaceBuilder(File startingDir, int dimension) {
+    public SpaceBuilderReflective(File startingDir, int dimension) {
         this.startingDir = startingDir;
         this.dimension = dimension;
     }
@@ -109,7 +111,7 @@ public class SpaceBuilder {
      * @param dimension
      * @param seed
      */
-    public SpaceBuilder(File startingDir, int dimension, int seed) {
+    public SpaceBuilderReflective(File startingDir, int dimension, int seed) {
         this.startingDir = startingDir;
         this.dimension = dimension;
         this.seed = seed;
@@ -209,74 +211,100 @@ public class SpaceBuilder {
      * @param outputDir
      * @throws IOException
      */
-    public void build(File outputDir) throws IOException {
+    public void build(File outputDir, int numReflective) throws IOException {
+        int iteration = 0;
         if (!outputDir.exists()) {
             outputDir.mkdir();
         }
         Map<String, Integer> dict = buildDictionary(startingDir, size);
-        idfMap = new HashMap<>();
         logger.log(Level.INFO, "Dictionary size {0}", dict.size());
         logger.log(Level.INFO, "Use self random vector: {0}", self);
         logger.log(Level.INFO, "IDF score: {0}", idf);
+        logger.log(Level.INFO, "Number iterations: {0}", numReflective);
         Map<String, Vector> elementalSpace = new HashMap<>();
         //create random vectors space
         logger.info("Building elemental vectors...");
         totalOcc = 0;
         Random random = new Random();
-        for (String word : dict.keySet()) {
-            elementalSpace.put(word, VectorFactory.generateRandomVector(VectorType.REAL, dimension, seed, random));
-            totalOcc += dict.get(word);
-        }
-        logger.log(Level.INFO, "Total occurrences {0}", totalOcc);
-        logger.log(Level.INFO, "Building spaces: {0}", startingDir.getAbsolutePath());
-        File[] listFiles = startingDir.listFiles();
-        for (File file : listFiles) {
-            logger.log(Level.INFO, "Space: {0}", file.getAbsolutePath());
-            BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))));
-            DataOutputStream outputStream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(outputDir.getAbsolutePath() + "/" + file.getName() + ".vectors")));
-            String header = VectorStoreUtils.createHeader(VectorType.REAL, dimension, seed);
-            outputStream.writeUTF(header);
-            String[] split;
-            while (reader.ready()) {
-                split = reader.readLine().split("\t");
-                String token = split[0];
-                if (elementalSpace.containsKey(token)) {
-                    Vector v;
-                    if (self) {
-                        v = elementalSpace.get(token).copy();
-                    } else {
-                        v = VectorFactory.createZeroVector(VectorType.REAL, dimension);
-                    }
-                    int i = 1;
-                    while (i < split.length) {
-                        String word = split[i];
-                        Vector ev = elementalSpace.get(word);
-                        if (ev != null) {
-                            int coocc = Integer.parseInt(split[i + 1]);
-                            double w = 1;
-                            for (int k = 0; k < coocc; k++) {
-                                if (idf) {
-                                    w += idf(word, coocc);
-                                } else {
-                                    w++;
-                                }
-                            }
-                            v.superpose(ev, w, null);
-                        }
-                        i = i + 2;
-                    }
-                    if (!v.isZeroVector()) {
-                        v.normalize();
-                        outputStream.writeUTF(token);
-                        v.writeToStream(outputStream);
-                    }
+        while (iteration <= numReflective) {
+            logger.log(Level.INFO, "Iteration {0}", iteration);
+            File outputSubDir = new File(outputDir + "/step_" + iteration);
+            outputSubDir.mkdir();
+            if (iteration == 0) {
+                for (String word : dict.keySet()) {
+                    elementalSpace.put(word, VectorFactory.generateRandomVector(VectorType.REAL, dimension, seed, random));
+                    totalOcc += dict.get(word);
                 }
             }
-            reader.close();
-            outputStream.close();
+            logger.log(Level.INFO, "Total occurrences {0}", totalOcc);
+            logger.log(Level.INFO, "Building spaces: {0}", startingDir.getAbsolutePath());
+            File[] listFiles = startingDir.listFiles();
+            for (File file : listFiles) {
+                logger.log(Level.INFO, "Space: {0}", file.getAbsolutePath());
+                BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))));
+                DataOutputStream outputStream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(outputSubDir.getAbsolutePath() + "/" + file.getName() + ".vectors")));
+                String header = VectorStoreUtils.createHeader(VectorType.REAL, dimension, seed);
+                outputStream.writeUTF(header);
+                String[] split;
+                Vector vector_avg = null;
+                if (iteration != 0) {
+                    elementalSpace.clear();
+                    elementalSpace = null;
+                    System.gc();
+                    logger.log(Level.INFO, "Loading vector from iteration {0}", iteration - 1);
+                    MemoryVectorReader mvr = new MemoryVectorReader(new File(outputDir + "/step_" + (iteration - 1) + "/" + file.getName() + ".vectors"));
+                    mvr.init();
+                    elementalSpace = mvr.getMemory();
+                    vector_avg = calculate_average(new ArrayList<>(elementalSpace.values()));
+                }
+                while (reader.ready()) {
+                    split = reader.readLine().split("\t");
+                    String token = split[0];
+                    if (elementalSpace.containsKey(token)) {
+                        Vector v;
+                        if (self) {
+                            v = elementalSpace.get(token).copy();
+                        } else {
+                            v = VectorFactory.createZeroVector(VectorType.REAL, dimension);
+                        }
+                        int i = 1;
+                        while (i < split.length) {
+                            String word = split[i];
+                            Vector ev = elementalSpace.get(word);
+
+                            if (ev != null) {
+                                int coocc = Integer.parseInt(split[i + 1]);
+                                double w = 1;
+                                for (int k = 0; k < coocc; k++) {
+                                    if (idf) {
+                                        w += idf(word, coocc);
+                                    } else {
+                                        w++;
+                                    }
+                                }
+                                v.superpose(ev, w, null);
+                            }
+                            i = i + 2;
+                        }
+                        if (!v.isZeroVector()) {
+                            if (iteration != 0) {
+                                v.superpose(vector_avg, -1, null);
+                            }
+                            v.normalize();
+                            outputStream.writeUTF(token);
+                            v.writeToStream(outputStream);
+                        }
+                    }
+                }
+                reader.close();
+                outputStream.close();
+            }
+            if (iteration == 0) {
+                logger.log(Level.INFO, "Save elemental vectors in dir: {0}", outputSubDir.getAbsolutePath());
+                VectorStoreUtils.saveSpace(new File(outputSubDir.getAbsolutePath() + "/vectors.elemental"), elementalSpace, VectorType.REAL, dimension, seed);
+            }
+            iteration++;
         }
-        logger.log(Level.INFO, "Save elemental vectors in dir: {0}", outputDir.getAbsolutePath());
-        VectorStoreUtils.saveSpace(new File(outputDir.getAbsolutePath() + "/vectors.elemental"), elementalSpace, VectorType.REAL, dimension, seed);
     }
 
     private Map<String, Integer> buildDictionary(File startingDir, int maxSize) throws IOException {
@@ -333,8 +361,22 @@ public class SpaceBuilder {
                 .addOption("s", true, "The number of seeds (optional, defaults 10)")
                 .addOption("v", true, "The dictionary size (optional, defaults 100000)")
                 .addOption("ds", true, "Down sampling factor (optional, defaults 0.001)")
-                .addOption("idf", true, "Enable IDF (optinal, defaults false)")
-                .addOption("self", true, "Inizialize using random vector (optinal, defaults false)");
+                .addOption("idf", true, "Enable IDF (optional, defaults false)")
+                .addOption("self", true, "Inizialize using random vector (optional, defaults false)")
+                .addOption("iteration", true, "Number of iterations for RandomReflective (optional, defaults 3)");
+    }
+
+    private Vector calculate_average(ArrayList<Vector> vectors) {
+        Vector avg = null;
+        if (vectors.size() > 0) {
+            avg = VectorFactory.createZeroVector(VectorType.REAL, dimension);
+            Vector vectorsum = VectorFactory.createZeroVector(VectorType.REAL, dimension);
+            for (int i = 0; i < vectors.size(); i++) {
+                vectorsum.superpose(vectors.get(i), 1, null);
+            }
+            avg.superpose(vectorsum, (double) 1 / vectors.size(), null);
+        }
+        return avg;
     }
 
     /**
@@ -342,18 +384,29 @@ public class SpaceBuilder {
      *
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
+        /*
+        SpaceBuilderReflective builder = new SpaceBuilderReflective(new File("/home/roberta/Scrivania/prova/occ/"));
+        builder.setDimension(600);
+        builder.setSeed(2);
+        builder.setSize(250000);
+        builder.setSample(0.001);
+        builder.setNormalize(Boolean.parseBoolean("false"));
+        builder.setSelf(Boolean.parseBoolean("false"));
+        builder.build(new File("/home/roberta/Scrivania/prova/vectorP/"), 2);
+
+         */
         try {
             CommandLine cmd = cmdParser.parse(options, args);
             if (cmd.hasOption("c") && cmd.hasOption("o")) {
                 try {
-                    SpaceBuilder builder = new SpaceBuilder(new File(cmd.getOptionValue("c")));
+                    SpaceBuilderReflective builder = new SpaceBuilderReflective(new File(cmd.getOptionValue("c")));
                     builder.setDimension(Integer.parseInt(cmd.getOptionValue("d", "300")));
                     builder.setSeed(Integer.parseInt(cmd.getOptionValue("s", "10")));
                     builder.setSize(Integer.parseInt(cmd.getOptionValue("v", "100000")));
-                    builder.setIdf(Boolean.parseBoolean(cmd.getOptionValue("idf", "false")));
+                    builder.setIdf(Boolean.parseBoolean(cmd.getOptionValue("norm", "false")));
                     builder.setSelf(Boolean.parseBoolean(cmd.getOptionValue("self", "false")));
-                    builder.build(new File(cmd.getOptionValue("o")));
+                    builder.build(new File(cmd.getOptionValue("o")), Integer.parseInt(cmd.getOptionValue("iteration", "3")));
                 } catch (IOException | NumberFormatException ex) {
                     logger.log(Level.SEVERE, null, ex);
                 }
@@ -362,7 +415,7 @@ public class SpaceBuilder {
                 helpFormatter.printHelp("Build WordSpace using Temporal Random Indexing", options, true);
             }
         } catch (ParseException ex) {
-            Logger.getLogger(SpaceBuilder.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(SpaceBuilderReflective.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
 }

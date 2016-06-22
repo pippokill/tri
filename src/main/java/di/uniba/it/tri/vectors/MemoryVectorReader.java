@@ -88,6 +88,12 @@ public class MemoryVectorReader implements VectorReader {
         //logger.log(Level.INFO, "Total vectors: {0}", memory.size());
     }
 
+    public Map<String, Vector> getMemory() {
+        return memory;
+    }
+    
+    
+
     /**
      *
      * @param key
