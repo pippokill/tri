@@ -136,7 +136,11 @@ public class BuildOccStatistics {
                     for (k = 0; k < vc.length; k++) {
                         switch (mode) {
                             case "logfreq":
-                                writer.append(sep).append(String.valueOf(Math.log((double) vc[k] / (double) totalCount[k]) / Math.log(2)));
+                                if (vc[k] == 0) {
+                                    writer.append(sep).append(String.valueOf(0d));
+                                } else {
+                                    writer.append(sep).append(String.valueOf(Math.log((double) vc[k] / (double) totalCount[k]) / Math.log(2)));
+                                }
                                 break;
                             case "freq":
                                 writer.append(sep).append(String.valueOf((double) vc[k] / (double) totalCount[k]));
