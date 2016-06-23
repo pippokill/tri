@@ -66,7 +66,8 @@ public class BuildOccStatistics {
         options = new Options();
         options.addOption("i", true, "Input directory")
                 .addOption("o", true, "Output file")
-                .addOption("f", true, "Output format plain or csv (default=plain)");
+                .addOption("f", true, "Output format plain or csv (default=plain)")
+                .addOption("m", true, "Mode: occ, freq, logfreq (default=logfreq)");
     }
 
     /**
@@ -77,63 +78,78 @@ public class BuildOccStatistics {
             CommandLine cmd = cmdParser.parse(options, args);
             if (cmd.hasOption("i") && cmd.hasOption("o")) {
                 String format = cmd.getOptionValue("f", "plain");
-                if (format.equals("plat") || format.equals("csv")) {
-                    File startDir = new File(cmd.getOptionValue("i"));
-                    File[] files = startDir.listFiles();
-                    Arrays.sort(files);
-                    Map<String, int[]> cmap = new TreeMap<>();
-                    int k = 0;
-                    for (File file : files) {
-                        System.out.println("Reading " + file);
-                        BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))));
-                        String[] split;
-                        while (reader.ready()) {
-                            split = reader.readLine().split("\\s+");
-                            int c = 0;
-                            for (int i = 2; i < split.length; i = i + 2) {
-                                c += Integer.parseInt(split[i]);
-                            }
-                            int[] vc = cmap.get(split[0]);
-                            if (vc == null) {
-                                vc = new int[files.length];
-                                cmap.put(split[0], vc);
-                            }
-                            vc[k] = c;
-                        }
-                        reader.close();
-                        k++;
-                    }
-                    BufferedWriter writer = new BufferedWriter(new FileWriter(cmd.getOptionValue("o")));
-                    if (format.equals("csv")) {
-                        writer.append(",word");
-                        for (File f : files) {
-                            writer.append(",");
-                            writer.append(f.getName().replace("count_", ""));
-                        }
-                        writer.newLine();
-                    }
-                    int id = 0;
-                    char sep = '\t';
-                    if (format.equals("csv")) {
-                        sep = ',';
-                    }
-                    for (Map.Entry<String, int[]> e : cmap.entrySet()) {
-                        if (format.equals("csv")) {
-                            writer.append(String.valueOf(id));
-                            writer.append(sep);
-                        }
-                        writer.append(e.getKey());
-                        int[] vc = e.getValue();
-                        for (int c : vc) {
-                            writer.append(sep).append(String.valueOf(c));
-                        }
-                        writer.newLine();
-                        id++;
-                    }
-                    writer.close();
-                } else {
+                String mode = cmd.getOptionValue("m", "occ");
+                if (!(format.equals("plain") || format.equals("csv"))) {
                     throw new IllegalArgumentException("No valid format");
                 }
+                if (!(mode.equals("occ") || mode.equals("freq") || mode.equals("logfreq"))) {
+                    throw new IllegalArgumentException("No valid mode");
+                }
+                File startDir = new File(cmd.getOptionValue("i"));
+                File[] files = startDir.listFiles();
+                Arrays.sort(files);
+                Map<String, int[]> cmap = new TreeMap<>();
+                int k = 0;
+                long[] totalCount = new long[files.length];
+                for (File file : files) {
+                    System.out.println("Reading " + file);
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))));
+                    String[] split;
+                    while (reader.ready()) {
+                        split = reader.readLine().split("\\s+");
+                        int c = 0;
+                        for (int i = 2; i < split.length; i = i + 2) {
+                            c += Integer.parseInt(split[i]);
+                        }
+                        int[] vc = cmap.get(split[0]);
+                        if (vc == null) {
+                            vc = new int[files.length];
+                            cmap.put(split[0], vc);
+                        }
+                        vc[k] = c;
+                        totalCount[k] += c;
+                    }
+                    reader.close();
+                    k++;
+                }
+                BufferedWriter writer = new BufferedWriter(new FileWriter(cmd.getOptionValue("o")));
+                if (format.equals("csv")) {
+                    writer.append(",word");
+                    for (File f : files) {
+                        writer.append(",");
+                        writer.append(f.getName().replace("count_", ""));
+                    }
+                    writer.newLine();
+                }
+                int id = 0;
+                char sep = '\t';
+                if (format.equals("csv")) {
+                    sep = ',';
+                }
+                for (Map.Entry<String, int[]> e : cmap.entrySet()) {
+                    if (format.equals("csv")) {
+                        writer.append(String.valueOf(id));
+                        writer.append(sep);
+                    }
+                    writer.append(e.getKey());
+                    int[] vc = e.getValue();
+                    for (k = 0; k < vc.length; k++) {
+                        switch (mode) {
+                            case "logfreq":
+                                writer.append(sep).append(String.valueOf(Math.log((double) vc[k] / (double) totalCount[k]) / Math.log(2)));
+                                break;
+                            case "freq":
+                                writer.append(sep).append(String.valueOf((double) vc[k] / (double) totalCount[k]));
+                                break;
+                            case "occ":
+                                writer.append(sep).append(String.valueOf(vc[k]));
+                                break;
+                        }
+                    }
+                    writer.newLine();
+                    id++;
+                }
+                writer.close();
             } else {
                 HelpFormatter helpFormatter = new HelpFormatter();
                 helpFormatter.printHelp("Build frequencies matrix", options, true);

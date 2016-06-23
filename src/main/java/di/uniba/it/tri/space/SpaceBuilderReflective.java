@@ -197,10 +197,10 @@ public class SpaceBuilderReflective {
         this.self = self;
     }
 
-    private double idf(String word, int wordOcc) {
+    private double idf(String word, double wordOcc) {
         Double idf = idfMap.get(word);
         if (idf == null) {
-            idf = Math.log((double) totalOcc / (double) wordOcc) / Math.log(2);
+            idf = Math.log((double) totalOcc / wordOcc) / Math.log(2);
             idfMap.put(word, idf);
         }
         return idf;
@@ -273,14 +273,9 @@ public class SpaceBuilderReflective {
                             Vector ev = elementalSpace.get(word);
 
                             if (ev != null) {
-                                int coocc = Integer.parseInt(split[i + 1]);
-                                double w = 1;
-                                for (int k = 0; k < coocc; k++) {
-                                    if (idf) {
-                                        w += idf(word, coocc);
-                                    } else {
-                                        w++;
-                                    }
+                                double w = Integer.parseInt(split[i + 1]);
+                                if (idf) {
+                                    w += idf(word, w);
                                 }
                                 v.superpose(ev, w, null);
                             }

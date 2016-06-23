@@ -85,6 +85,9 @@ public class BuildSimStatistics {
             CommandLine cmd = cmdParser.parse(options, args);
             if (cmd.hasOption("i") && cmd.hasOption("o")) {
                 String format = cmd.getOptionValue("f", "plain");
+                if (!(format.equals("plain") || format.equals("csv"))) {
+                    throw new IllegalArgumentException("No valid format");
+                }
                 Tri api = new Tri();
                 api.setMaindir(cmd.getOptionValue("i"));
                 api.load("file", null, "-1");
@@ -116,7 +119,7 @@ public class BuildSimStatistics {
                 }
                 int dimension = evr.getDimension();
                 long time = System.currentTimeMillis();
-                int id=0;
+                int id = 0;
                 while (keys.hasNext()) {
                     String key = keys.next();
                     Vector precv = VectorFactory.createZeroVector(VectorType.REAL, dimension);
