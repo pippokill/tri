@@ -209,6 +209,7 @@ public class SpaceBuilderReflective {
     /**
      *
      * @param outputDir
+     * @param numReflective
      * @throws IOException
      */
     public void build(File outputDir, int numReflective) throws IOException {
@@ -275,7 +276,7 @@ public class SpaceBuilderReflective {
                             if (ev != null) {
                                 double w = Integer.parseInt(split[i + 1]);
                                 if (idf) {
-                                    w += idf(word, w);
+                                    w += idf(word, dict.get(word).doubleValue());
                                 }
                                 v.superpose(ev, w, null);
                             }
@@ -358,7 +359,7 @@ public class SpaceBuilderReflective {
                 .addOption("ds", true, "Down sampling factor (optional, defaults 0.001)")
                 .addOption("idf", true, "Enable IDF (optional, defaults false)")
                 .addOption("self", true, "Inizialize using random vector (optional, defaults false)")
-                .addOption("iteration", true, "Number of iterations for RandomReflective (optional, defaults 3)");
+                .addOption("it", true, "Number of iterations for RandomReflective (optional, defaults 3)");
     }
 
     private Vector calculate_average(ArrayList<Vector> vectors) {
@@ -380,17 +381,6 @@ public class SpaceBuilderReflective {
      * @param args the command line arguments
      */
     public static void main(String[] args) throws IOException {
-        /*
-        SpaceBuilderReflective builder = new SpaceBuilderReflective(new File("/home/roberta/Scrivania/prova/occ/"));
-        builder.setDimension(600);
-        builder.setSeed(2);
-        builder.setSize(250000);
-        builder.setSample(0.001);
-        builder.setNormalize(Boolean.parseBoolean("false"));
-        builder.setSelf(Boolean.parseBoolean("false"));
-        builder.build(new File("/home/roberta/Scrivania/prova/vectorP/"), 2);
-
-         */
         try {
             CommandLine cmd = cmdParser.parse(options, args);
             if (cmd.hasOption("c") && cmd.hasOption("o")) {
@@ -399,9 +389,9 @@ public class SpaceBuilderReflective {
                     builder.setDimension(Integer.parseInt(cmd.getOptionValue("d", "300")));
                     builder.setSeed(Integer.parseInt(cmd.getOptionValue("s", "10")));
                     builder.setSize(Integer.parseInt(cmd.getOptionValue("v", "100000")));
-                    builder.setIdf(Boolean.parseBoolean(cmd.getOptionValue("norm", "false")));
+                    builder.setIdf(Boolean.parseBoolean(cmd.getOptionValue("idf", "false")));
                     builder.setSelf(Boolean.parseBoolean(cmd.getOptionValue("self", "false")));
-                    builder.build(new File(cmd.getOptionValue("o")), Integer.parseInt(cmd.getOptionValue("iteration", "3")));
+                    builder.build(new File(cmd.getOptionValue("o")), Integer.parseInt(cmd.getOptionValue("it", "3")));
                 } catch (IOException | NumberFormatException ex) {
                     logger.log(Level.SEVERE, null, ex);
                 }

@@ -254,7 +254,7 @@ public class SpaceBuilder {
                         if (ev != null) {
                             double w = Integer.parseInt(split[i + 1]);
                             if (idf) {
-                                w = w * idf(word, w);
+                                w = w * idf(word, dict.get(word).doubleValue());
                             }
                             v.superpose(ev, w, null);
                         }
