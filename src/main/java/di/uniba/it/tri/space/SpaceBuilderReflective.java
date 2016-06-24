@@ -356,7 +356,6 @@ public class SpaceBuilderReflective {
                 .addOption("d", true, "The vector dimension (optional, defaults 300)")
                 .addOption("s", true, "The number of seeds (optional, defaults 10)")
                 .addOption("v", true, "The dictionary size (optional, defaults 100000)")
-                .addOption("ds", true, "Down sampling factor (optional, defaults 0.001)")
                 .addOption("idf", true, "Enable IDF (optional, defaults false)")
                 .addOption("self", true, "Inizialize using random vector (optional, defaults false)")
                 .addOption("it", true, "Number of iterations for RandomReflective (optional, defaults 3)");
