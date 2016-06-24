@@ -34,7 +34,7 @@
  */
 package di.uniba.it.tri.space;
 
-import di.uniba.it.tri.space.custering.Clusters;
+import di.uniba.it.tri.space.clustering.Clusters;
 import di.uniba.it.tri.shell.TriShell;
 import di.uniba.it.tri.vectors.FileVectorReader;
 import di.uniba.it.tri.vectors.MapVectorReader;

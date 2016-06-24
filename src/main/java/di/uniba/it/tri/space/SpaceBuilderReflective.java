@@ -223,6 +223,7 @@ public class SpaceBuilderReflective {
         logger.log(Level.INFO, "IDF score: {0}", idf);
         logger.log(Level.INFO, "Number iterations: {0}", numReflective);
         Map<String, Vector> elementalSpace = new HashMap<>();
+        idfMap = new HashMap<>();
         //create random vectors space
         logger.info("Building elemental vectors...");
         totalOcc = 0;

@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package di.uniba.it.tri.space.custering;
+package di.uniba.it.tri.space.clustering;
 
 import di.uniba.it.tri.vectors.Vector;
 
