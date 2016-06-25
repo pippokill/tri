@@ -223,7 +223,6 @@ public class SpaceBuilderReflective {
         logger.log(Level.INFO, "IDF score: {0}", idf);
         logger.log(Level.INFO, "Number iterations: {0}", numReflective);
         Map<String, Vector> elementalSpace = new HashMap<>();
-        idfMap = new HashMap<>();
         //create random vectors space
         logger.info("Building elemental vectors...");
         totalOcc = 0;
@@ -232,6 +231,7 @@ public class SpaceBuilderReflective {
             logger.log(Level.INFO, "Iteration {0}", iteration);
             File outputSubDir = new File(outputDir + "/step_" + iteration);
             outputSubDir.mkdir();
+            //in the first iteration init the random vectors and total occurrences
             if (iteration == 0) {
                 for (String word : dict.keySet()) {
                     elementalSpace.put(word, VectorFactory.generateRandomVector(VectorType.REAL, dimension, seed, random));
@@ -242,6 +242,8 @@ public class SpaceBuilderReflective {
             logger.log(Level.INFO, "Building spaces: {0}", startingDir.getAbsolutePath());
             File[] listFiles = startingDir.listFiles();
             for (File file : listFiles) {
+                //init idf for each year
+                idfMap = new HashMap<>();
                 logger.log(Level.INFO, "Space: {0}", file.getAbsolutePath());
                 BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))));
                 DataOutputStream outputStream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(outputSubDir.getAbsolutePath() + "/" + file.getName() + ".vectors")));
@@ -257,6 +259,7 @@ public class SpaceBuilderReflective {
                     MemoryVectorReader mvr = new MemoryVectorReader(new File(outputDir + "/step_" + (iteration - 1) + "/" + file.getName() + ".vectors"));
                     mvr.init();
                     elementalSpace = mvr.getMemory();
+                    //calculate average of all vectors
                     vector_avg = calculate_average(new ArrayList<>(elementalSpace.values()));
                 }
                 while (reader.ready()) {
@@ -270,22 +273,23 @@ public class SpaceBuilderReflective {
                             v = VectorFactory.createZeroVector(VectorType.REAL, dimension);
                         }
                         int i = 1;
+                        int numSup = 0;
                         while (i < split.length) {
                             String word = split[i];
                             Vector ev = elementalSpace.get(word);
-
                             if (ev != null) {
                                 double w = Integer.parseInt(split[i + 1]);
                                 if (idf) {
                                     w += idf(word, dict.get(word).doubleValue());
                                 }
                                 v.superpose(ev, w, null);
+                                numSup++;
                             }
                             i = i + 2;
                         }
                         if (!v.isZeroVector()) {
                             if (iteration != 0) {
-                                v.superpose(vector_avg, -1, null);
+                                v.superpose(vector_avg, -numSup, null);
                             }
                             v.normalize();
                             outputStream.writeUTF(token);
@@ -330,13 +334,14 @@ public class SpaceBuilderReflective {
         logger.info("Sorting...");
         PriorityQueue<DictionaryEntry> queue = new PriorityQueue<>();
         for (Map.Entry<String, Integer> e : cmap.entrySet()) {
-            if (queue.size() < maxSize) {
+            if (queue.size() <= maxSize) {
                 queue.offer(new DictionaryEntry(e.getKey(), e.getValue()));
             } else {
                 queue.offer(new DictionaryEntry(e.getKey(), e.getValue()));
                 queue.poll();
             }
         }
+        queue.poll();
         cmap.clear();
         cmap = null;
         Map<String, Integer> dict = new HashMap<>(queue.size());

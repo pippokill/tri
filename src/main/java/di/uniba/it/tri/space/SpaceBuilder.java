@@ -67,7 +67,7 @@ import org.apache.commons.cli.ParseException;
  */
 public class SpaceBuilder {
 
-    private static final Logger logger = Logger.getLogger(SpaceBuilder.class.getName());
+    private static final Logger LOG = Logger.getLogger(SpaceBuilder.class.getName());
 
     private int dimension = 200;
 
@@ -214,24 +214,26 @@ public class SpaceBuilder {
             outputDir.mkdir();
         }
         Map<String, Integer> dict = buildDictionary(startingDir, size);
-        idfMap = new HashMap<>();
-        logger.log(Level.INFO, "Dictionary size {0}", dict.size());
-        logger.log(Level.INFO, "Use self random vector: {0}", self);
-        logger.log(Level.INFO, "IDF score: {0}", idf);
+        LOG.log(Level.INFO, "Dictionary size {0}", dict.size());
+        LOG.log(Level.INFO, "Use self random vector: {0}", self);
+        LOG.log(Level.INFO, "IDF score: {0}", idf);
         Map<String, Vector> elementalSpace = new HashMap<>();
         //create random vectors space
-        logger.info("Building elemental vectors...");
+        LOG.info("Building elemental vectors...");
         totalOcc = 0;
         Random random = new Random();
         for (String word : dict.keySet()) {
             elementalSpace.put(word, VectorFactory.generateRandomVector(VectorType.REAL, dimension, seed, random));
+            //compute total occurrences taking into account the dictionary
             totalOcc += dict.get(word);
         }
-        logger.log(Level.INFO, "Total occurrences {0}", totalOcc);
-        logger.log(Level.INFO, "Building spaces: {0}", startingDir.getAbsolutePath());
+        LOG.log(Level.INFO, "Total occurrences {0}", totalOcc);
+        LOG.log(Level.INFO, "Building spaces: {0}", startingDir.getAbsolutePath());
         File[] listFiles = startingDir.listFiles();
         for (File file : listFiles) {
-            logger.log(Level.INFO, "Space: {0}", file.getAbsolutePath());
+            //init idf for each year
+            idfMap = new HashMap<>();
+            LOG.log(Level.INFO, "Space: {0}", file.getAbsolutePath());
             BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))));
             DataOutputStream outputStream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(outputDir.getAbsolutePath() + "/" + file.getName() + ".vectors")));
             String header = VectorStoreUtils.createHeader(VectorType.REAL, dimension, seed);
@@ -270,16 +272,16 @@ public class SpaceBuilder {
             reader.close();
             outputStream.close();
         }
-        logger.log(Level.INFO, "Save elemental vectors in dir: {0}", outputDir.getAbsolutePath());
+        LOG.log(Level.INFO, "Save elemental vectors in dir: {0}", outputDir.getAbsolutePath());
         VectorStoreUtils.saveSpace(new File(outputDir.getAbsolutePath() + "/vectors.elemental"), elementalSpace, VectorType.REAL, dimension, seed);
     }
 
     private Map<String, Integer> buildDictionary(File startingDir, int maxSize) throws IOException {
-        logger.log(Level.INFO, "Building dictionary: {0}", startingDir.getAbsolutePath());
+        LOG.log(Level.INFO, "Building dictionary: {0}", startingDir.getAbsolutePath());
         Map<String, Integer> cmap = new HashMap<>();
         File[] listFiles = startingDir.listFiles();
         for (File file : listFiles) {
-            logger.log(Level.INFO, "Working on file: {0}", file.getName());
+            LOG.log(Level.INFO, "Working on file: {0}", file.getName());
             BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))));
             while (reader.ready()) {
                 String[] split = reader.readLine().split("\t");
@@ -297,16 +299,17 @@ public class SpaceBuilder {
             }
             reader.close();
         }
-        logger.info("Sorting...");
+        LOG.info("Sorting...");
         PriorityQueue<DictionaryEntry> queue = new PriorityQueue<>();
         for (Map.Entry<String, Integer> e : cmap.entrySet()) {
-            if (queue.size() < maxSize) {
+            if (queue.size() <= maxSize) {
                 queue.offer(new DictionaryEntry(e.getKey(), e.getValue()));
             } else {
                 queue.offer(new DictionaryEntry(e.getKey(), e.getValue()));
                 queue.poll();
             }
         }
+        queue.poll();
         cmap.clear();
         cmap = null;
         Map<String, Integer> dict = new HashMap<>(queue.size());
@@ -327,7 +330,6 @@ public class SpaceBuilder {
                 .addOption("d", true, "The vector dimension (optional, defaults 300)")
                 .addOption("s", true, "The number of seeds (optional, defaults 10)")
                 .addOption("v", true, "The dictionary size (optional, defaults 100000)")
-                .addOption("ds", true, "Down sampling factor (optional, defaults 0.001)")
                 .addOption("idf", true, "Enable IDF (optinal, defaults false)")
                 .addOption("self", true, "Inizialize using random vector (optinal, defaults false)");
     }
@@ -350,7 +352,7 @@ public class SpaceBuilder {
                     builder.setSelf(Boolean.parseBoolean(cmd.getOptionValue("self", "false")));
                     builder.build(new File(cmd.getOptionValue("o")));
                 } catch (IOException | NumberFormatException ex) {
-                    logger.log(Level.SEVERE, null, ex);
+                    LOG.log(Level.SEVERE, null, ex);
                 }
             } else {
                 HelpFormatter helpFormatter = new HelpFormatter();
