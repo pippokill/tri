@@ -72,11 +72,12 @@ public class BuildSimStatistics {
         options = new Options();
         options.addOption("i", true, "Input directory")
                 .addOption("o", true, "Output file")
-                .addOption("f", true, "Output format plain or csv (default=plain)");
+                .addOption("f", true, "Output format: plain or csv (default=plain)")
+                .addOption("m", true, "Mode: pointwise (point) or cumulative (cum) (default=cum)");
     }
 
     /**
-     * base_dir_1 output_file_1
+     *
      *
      * @param args the command line arguments
      */
@@ -85,17 +86,22 @@ public class BuildSimStatistics {
             CommandLine cmd = cmdParser.parse(options, args);
             if (cmd.hasOption("i") && cmd.hasOption("o")) {
                 String format = cmd.getOptionValue("f", "plain");
+                String mode = cmd.getOptionValue("m", "cum");
                 if (!(format.equals("plain") || format.equals("csv"))) {
                     throw new IllegalArgumentException("No valid format");
                 }
+                if (!(mode.equals("point") || mode.equals("cum"))) {
+                    throw new IllegalArgumentException("No valid mode");
+                }
                 Tri api = new Tri();
                 api.setMaindir(cmd.getOptionValue("i"));
+                //load elemental vector
                 api.load("file", null, "-1");
                 char sep = '\t';
+                List<String> years = api.year(0, Integer.MAX_VALUE);
                 BufferedWriter writer = new BufferedWriter(new FileWriter(cmd.getOptionValue("o")));
                 if (format.equals("csv")) {
                     writer.append(",word");
-                    List<String> years = api.year(0, Integer.MAX_VALUE);
                     for (String year : years) {
                         writer.append(",");
                         writer.append(year);
@@ -107,11 +113,9 @@ public class BuildSimStatistics {
                 Iterator<String> keys = evr.getKeys();
                 int c = 0;
                 System.out.println();
-                List<String> availableYears = TemporalSpaceUtils.getAvailableYears(new File(cmd.getOptionValue("i")), -Integer.MAX_VALUE, Integer.MAX_VALUE);
-                Collections.sort(availableYears);
+                Collections.sort(years);
                 Map<String, VectorReader> vrmap = new HashMap<>();
-                //just read vector dimension
-                for (String year : availableYears) {
+                for (String year : years) {
                     System.out.println("Loading " + year);
                     VectorReader vrd = TemporalSpaceUtils.getVectorReader(new File(cmd.getOptionValue("i")), year, true);
                     vrd.init();
@@ -124,18 +128,23 @@ public class BuildSimStatistics {
                     String key = keys.next();
                     Vector precv = VectorFactory.createZeroVector(VectorType.REAL, dimension);
                     List<TriResultObject> list = new ArrayList<>();
-                    for (String ys : availableYears) {
+                    for (String ys : years) {
                         VectorReader vr = vrmap.get(ys);
                         Vector v = vr.getVector(key);
                         if (v != null) {
-                            Vector copy = precv.copy();
-                            copy.superpose(v, 1, null);
-                            copy.normalize();
-                            list.add(new TriResultObject(ys + "\t" + key, (float) copy.measureOverlap(precv)));
-                            precv.superpose(v, 1, null);
-                            precv.normalize();
+                            if (mode.equals("cum")) {
+                                Vector copy = precv.copy();
+                                copy.superpose(v, 1, null);
+                                copy.normalize();
+                                list.add(new TriResultObject(ys + "\t" + key, (float) copy.measureOverlap(precv)));
+                                precv.superpose(v, 1, null);
+                                precv.normalize();
+                            } else {
+                                list.add(new TriResultObject(ys + "\t" + key, (float) v.measureOverlap(precv)));
+                                precv = v.copy();
+                            }
                         } else {
-                            list.add(new TriResultObject(ys + "\t" + key, -1));
+                            list.add(new TriResultObject(ys + "\t" + key, 0));
                         }
                     }
                     if (format.equals("csv")) {
@@ -143,7 +152,7 @@ public class BuildSimStatistics {
                         writer.append(sep);
                     }
                     writer.append(key);
-                    list.remove(0);
+                    //list.remove(0);
                     for (TriResultObject r : list) {
                         if (r.getScore() >= 0) {
                             writer.append(sep).append(String.valueOf(r.getScore()));
