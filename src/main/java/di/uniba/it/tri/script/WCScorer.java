@@ -10,8 +10,10 @@ import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -41,20 +43,29 @@ public class WCScorer {
                 }
                 reader.close();
                 //load word set
-                Set<String> cwset = new HashSet<>();
+                Map<String, Integer> cwmap = new HashMap<>();
                 reader = new BufferedReader(new FileReader(args[1]));
                 while (reader.ready()) {
-                    String[] split = reader.readLine().split(",");
-                    for (String s : split) {
-                        cwset.add(s.trim());
+                    String[] split = reader.readLine().split("\\t");
+                    String[] words = split[0].split(",");
+                    String[] years = split[1].split(",");
+                    int min = Integer.MAX_VALUE;
+                    for (String y : years) {
+                        int v = Integer.parseInt(y.trim());
+                        if (v < min) {
+                            min = v;
+                        }
+                    }
+                    for (String s : words) {
+                        cwmap.put(s, min);
                     }
                 }
                 Collections.sort(rank, new TimeWordSorter());
                 System.out.println();
-                double[] map=new double[levels.length];
-                double[] acc=new double[levels.length];
-                for (int j=0;j<levels.length;j++) {
-                    String level=levels[j];
+                double[] map = new double[levels.length];
+                double[] acc = new double[levels.length];
+                for (int j = 0; j < levels.length; j++) {
+                    String level = levels[j];
                     int k;
                     if (level.equalsIgnoreCase("all")) {
                         k = rank.size();
@@ -64,21 +75,22 @@ public class WCScorer {
                     double correct = 0;
                     double ap = 0;
                     for (int i = 0; i < k; i++) {
-                        if (cwset.contains(rank.get(i).getWord())) {
+                        Integer y = cwmap.get(rank.get(i).getWord());
+                        if (y != null && rank.get(i).getCp() >= y) {
                             correct++;
                         }
                         ap += correct / (double) (i + 1);
                     }
                     ap /= (double) k;
-                    map[j]=ap;
-                    acc[j]= correct / (double) cwset.size();
+                    map[j] = ap;
+                    acc[j] = correct / (double) cwmap.size();
                 }
-                for (double v:map) {
+                for (double v : map) {
                     System.out.print(v);
                     System.out.print("\t");
                 }
                 System.out.println();
-                for (double v:acc) {
+                for (double v : acc) {
                     System.out.print(v);
                     System.out.print("\t");
                 }
