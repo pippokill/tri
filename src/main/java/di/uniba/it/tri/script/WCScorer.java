@@ -64,6 +64,8 @@ public class WCScorer {
                 System.out.println();
                 double[] map = new double[levels.length];
                 double[] acc = new double[levels.length];
+                double[] avgDist = new double[levels.length];
+                double[] varDist = new double[levels.length];
                 for (int j = 0; j < levels.length; j++) {
                     String level = levels[j];
                     int k;
@@ -77,6 +79,7 @@ public class WCScorer {
                     for (int i = 0; i < k; i++) {
                         Integer y = cwmap.get(rank.get(i).getWord());
                         if (y != null && rank.get(i).getCp() >= y) {
+                            avgDist[j] += rank.get(i).getCp() - y;
                             correct++;
                         }
                         ap += correct / (double) (i + 1);
@@ -84,13 +87,35 @@ public class WCScorer {
                     ap /= (double) k;
                     map[j] = ap;
                     acc[j] = correct / (double) cwmap.size();
+                    avgDist[j] /= correct;
+                    for (int i = 0; i < k; i++) {
+                        Integer y = cwmap.get(rank.get(i).getWord());
+                        if (y != null && rank.get(i).getCp() >= y) {
+                            varDist[j] += Math.pow(avgDist[j] - (rank.get(i).getCp() - y), 2);
+                        }
+                    }
+                    varDist[j] = Math.sqrt(varDist[j] / (correct - 1));
                 }
+                System.out.print("MAP\t");
                 for (double v : map) {
                     System.out.print(v);
                     System.out.print("\t");
                 }
                 System.out.println();
+                System.out.print("Acc.\t");
                 for (double v : acc) {
+                    System.out.print(v);
+                    System.out.print("\t");
+                }
+                System.out.println();
+                System.out.print("avgDist.\t");
+                for (double v : avgDist) {
+                    System.out.print(v);
+                    System.out.print("\t");
+                }
+                System.out.println();
+                System.out.print("varDist.\t");
+                for (double v : varDist) {
                     System.out.print(v);
                     System.out.print("\t");
                 }

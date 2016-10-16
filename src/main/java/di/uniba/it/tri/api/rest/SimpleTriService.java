@@ -60,7 +60,7 @@ public class SimpleTriService extends Thread {
         // create a resource config that scans for JAX-RS resources and providers
         // in com.example package
         final ResourceConfig rc = new ResourceConfig().packages(true, "di.uniba.it.tri.api.rest.v1").register(ResponseAllowOriginFilter.class);
-
+        //final ResourceConfig rc = new ResourceConfig().packages(true, "di.uniba.it.tri.api.rest.v1");
         // create and start a new instance of grizzly http server
         // exposing the Jersey application at BASE_URI
         return GrizzlyHttpServerFactory.createHttpServer(URI.create(ServerConfig.getInstance().getProperty("bind.address")), rc);
