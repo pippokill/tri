@@ -66,6 +66,8 @@ import java.util.Map.Entry;
 import java.util.PriorityQueue;
 import java.util.Random;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.document.Document;
@@ -285,7 +287,7 @@ public class TemporalSpaceUtils {
             if (file.getName().endsWith(".vectors")) {
                 String name = file.getName().replaceAll(".vectors", "");
                 String[] split = name.split("_");
-                String stringYear = split[split.length-1];
+                String stringYear = split[split.length - 1];
                 int year = Integer.parseInt(stringYear);
                 if (year >= start && year <= end) {
                     list.add(file);
@@ -294,6 +296,8 @@ public class TemporalSpaceUtils {
         }
         return list;
     }
+
+    private static Map<String, File> mapSpaceFile = new HashMap<>();
 
     /**
      * Return a list of available years given the directory where file readers
@@ -305,20 +309,22 @@ public class TemporalSpaceUtils {
      * @return The list of available years
      */
     public static List<String> getAvailableYears(File startDir, int start, int end) {
-        List<String> list = new ArrayList<>();
+        mapSpaceFile.clear();
         File[] listFiles = startDir.listFiles();
+        Pattern pattern = Pattern.compile("[0-9]+");
         for (File file : listFiles) {
             if (file.getName().endsWith(".vectors")) {
-                String name = file.getName().replaceAll(".vectors", "");
-                String[] split = name.split("_");
-                String stringYear = split[split.length-1];
-                int year = Integer.parseInt(stringYear);
-                if (year >= start && year <= end) {
-                    list.add(stringYear);
+                Matcher matcher = pattern.matcher(file.getName());
+                if (matcher.find()) {
+                    String stringYear = matcher.group();
+                    int year = Integer.parseInt(stringYear);
+                    if (year >= start && year <= end) {
+                        mapSpaceFile.put(stringYear, file);
+                    }
                 }
             }
         }
-        return list;
+        return new ArrayList(mapSpaceFile.keySet());
     }
 
     /**
@@ -399,7 +405,8 @@ public class TemporalSpaceUtils {
      * @return The file
      */
     public static File getVectorFile(File startDir, String year) {
-        return new File(startDir.getAbsolutePath() + "/count_" + year + ".vectors");
+        //return new File(startDir.getAbsolutePath() + "/count_" + year + ".vectors");
+        return (mapSpaceFile.get(year));
     }
 
     /**

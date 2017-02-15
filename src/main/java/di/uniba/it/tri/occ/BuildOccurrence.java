@@ -59,6 +59,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
@@ -228,7 +230,8 @@ public class BuildOccurrence {
             } else {
                 filename = file.getName().substring(0, eindex);
             }
-            if (filename.matches(filenameRegExp) && filename.lastIndexOf("_") > -1 && filename.endsWith(String.valueOf(year))) {
+            //if (filename.matches(filenameRegExp) && filename.lastIndexOf("_") > -1 && filename.endsWith(String.valueOf(year))) {
+            if (filename.matches(filenameRegExp) && filename.contains(String.valueOf(year))) {
                 logger.log(Level.INFO, "Working file: {0}", file.getName());
                 StringReader reader = extractor.extract(file);
                 List<String> tokens = tokenizer.getTokens(reader);
@@ -282,7 +285,8 @@ public class BuildOccurrence {
             } else {
                 filename = file.getName().substring(0, eindex);
             }
-            if (filename.matches(filenameRegExp) && filename.lastIndexOf("_") > -1 && filename.endsWith(String.valueOf(year))) {
+            //if (filename.matches(filenameRegExp) && filename.lastIndexOf("_") > -1 && filename.endsWith(String.valueOf(year))) {
+            if (filename.matches(filenameRegExp) && filename.contains(String.valueOf(year))) {
                 logger.log(Level.INFO, "Working file: {0}", file.getName());
                 itExtractor.extract(file);
                 while (itExtractor.hasNext()) {
@@ -339,10 +343,10 @@ public class BuildOccurrence {
         File[] listFiles = startingDir.listFiles();
         int minYear = Integer.MAX_VALUE;
         int maxYear = -Integer.MAX_VALUE;
+        Pattern yp = Pattern.compile("[0-9]+");
         for (File file : listFiles) {
-            int i = file.getName().lastIndexOf("_");
+            /*int i = file.getName().lastIndexOf("_");
             if (i > -1 && file.getName().substring(0, i).matches(filenameRegExp)) {
-                //fix year to consider only the last 4 chars, expect file extension
                 int eindex = file.getName().lastIndexOf(".");
                 String filename;
                 if (eindex < 0) {
@@ -350,12 +354,25 @@ public class BuildOccurrence {
                 } else {
                     filename = file.getName().substring(0, eindex);
                 }
-                int year = Integer.parseInt(filename.substring(filename.length() - 4, filename.length()));
+                int year = Integer.parseInt(filename.substring(filename.length() - 4, filename.length()));               
                 if (year < minYear) {
                     minYear = year;
                 }
                 if (year > maxYear) {
                     maxYear = year;
+                }
+            }*/
+            int i = file.getName().lastIndexOf(".");
+            if (i > -1 && file.getName().substring(0, i).matches(filenameRegExp)) {
+                Matcher matcher = yp.matcher(file.getName().substring(0, i));
+                if (matcher.find()) {
+                    int year = Integer.parseInt(matcher.group());
+                    if (year < minYear) {
+                        minYear = year;
+                    }
+                    if (year > maxYear) {
+                        maxYear = year;
+                    }
                 }
             }
         }
@@ -369,7 +386,7 @@ public class BuildOccurrence {
             } else if (itExtractor != null) {
                 count = countIterable(startingDir, k);
             }
-            if (count.getOcc().size() > 0) {
+            if (count != null && count.getOcc().size() > 0) {
                 save(count, k);
             }
         }
