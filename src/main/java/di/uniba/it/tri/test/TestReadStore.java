@@ -37,6 +37,7 @@ package di.uniba.it.tri.test;
 
 import di.uniba.it.tri.space.TemporalSpaceUtils;
 import di.uniba.it.tri.vectors.FileVectorReader;
+import di.uniba.it.tri.vectors.MemoryVectorReader;
 import di.uniba.it.tri.vectors.ObjectVector;
 import di.uniba.it.tri.vectors.Vector;
 import di.uniba.it.tri.vectors.VectorReader;
@@ -57,9 +58,9 @@ public class TestReadStore {
      */
     public static void main(String[] args) {
         try {
-            VectorReader reader=new FileVectorReader(new File("/media/pierpaolo/storage/data/gutenberg/vectors_ita/count_1518.vectors"));
+            VectorReader reader=new MemoryVectorReader(new File("/media/pierpaolo/SAMlinux/tri/tri_en_1year/space/plain_1997.occ.gz.vectors"));
             reader.init();
-            Vector vector = reader.getVector("rotte");
+            Vector vector = reader.getVector("culture");
             System.out.println(vector.toString());
             List<ObjectVector> nearestVectors = TemporalSpaceUtils.getNearestVectors(reader, vector, 10);
             for (ObjectVector ov:nearestVectors) {

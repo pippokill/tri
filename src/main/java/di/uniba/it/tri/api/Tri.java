@@ -107,7 +107,7 @@ public class Tri {
         return setmap;
     }
 
-    public boolean readerReay() {
+    public boolean readerReady() {
         return reader != null;
     }
 

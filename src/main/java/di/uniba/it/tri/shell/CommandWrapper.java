@@ -169,7 +169,7 @@ public class CommandWrapper {
     private void search(String cmd) throws Exception {
         String[] split = cmd.split("\\s+");
         if (split.length > 2) {
-            if (!tri.readerReay()) {
+            if (!tri.readerReady()) {
                 throw new Exception("no index in memory");
             } else {
                 if (!split[1].matches("[0-9]+")) {
@@ -522,7 +522,7 @@ public class CommandWrapper {
     private void sset(String command) throws Exception {
         String[] split = command.split("\\s+");
         if (split.length > 3) {
-            if (!tri.readerReay()) {
+            if (!tri.readerReady()) {
                 throw new Exception("no index in memory");
             } else {
                 if (!split[2].matches("[0-9]+")) {

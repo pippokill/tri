@@ -62,7 +62,7 @@ import org.apache.commons.cli.Options;
  *
  * @author pierpaolo
  */
-public class BuildSimStatistics {
+public class BuildSimStatisticsMO {
 
     static Options options;
 
@@ -73,9 +73,10 @@ public class BuildSimStatistics {
         options.addOption("i", true, "Input directory")
                 .addOption("o", true, "Output file")
                 .addOption("f", true, "Output format: plain or csv (default=plain)")
-                .addOption("m", true, "Mode: pointwise (point) or cumulative (cum) (default=cum)")
-                .addOption("r", true, "Reader type: mem (memory) or file (file) (default=file)");
+                .addOption("m", true, "Mode: pointwise (point) or cumulative (cum) (default=cum)");
     }
+
+    private static final Logger LOG = Logger.getLogger(BuildSimStatisticsMO.class.getName());
 
     /**
      *
@@ -111,72 +112,84 @@ public class BuildSimStatistics {
                     sep = ',';
                 }
                 VectorReader evr = api.getStores().get(Tri.ELEMENTAL_NAME);
-                Iterator<String> keys = evr.getKeys();
-                int c = 0;
-                System.out.println();
-                Collections.sort(years);
-                boolean mem = cmd.getOptionValue("r", "file").equalsIgnoreCase("mem");
-                Map<String, VectorReader> vrmap = new HashMap<>();
-                for (String year : years) {
-                    System.out.println("Loading " + year);
-                    VectorReader vrd = TemporalSpaceUtils.getVectorReader(new File(cmd.getOptionValue("i")), year, mem);
-                    vrd.init();
-                    vrmap.put(year, vrd);
-                }
                 int dimension = evr.getDimension();
-                long time = System.currentTimeMillis();
-                int id = 0;
-                while (keys.hasNext()) {
-                    String key = keys.next();
-                    Vector precv = VectorFactory.createZeroVector(VectorType.REAL, dimension);
-                    List<TriResultObject> list = new ArrayList<>();
-                    for (String ys : years) {
-                        VectorReader vr = vrmap.get(ys);
-                        Vector v = vr.getVector(key);
-                        if (v != null) {
+                LOG.info("Vector dimension: " + dimension);
+                List<String> keys = new ArrayList<>();
+                Iterator<String> it = evr.getKeys();
+                while (it.hasNext()) {
+                    keys.add(it.next());
+                }
+                evr.close();
+                LOG.info("Words: " + keys.size());
+                Collections.sort(years);
+                Map<String, double[]> values = new HashMap<>();
+                Map<String, Vector> pre_map = new HashMap<>();
+                for (String key : keys) {
+                    pre_map.put(key, VectorFactory.createZeroVector(VectorType.REAL, dimension));
+                    values.put(key, new double[years.size()]);
+                }
+                for (int i = 0; i < years.size(); i++) {
+                    int c = 0;
+                    String year = years.get(i);
+                    LOG.info(year);
+                    VectorReader vr2 = TemporalSpaceUtils.getVectorReader(new File(cmd.getOptionValue("i")), year, true);
+                    vr2.init();
+                    LOG.info("Computing...");
+                    for (String key : keys) {
+                        Vector copy = null;
+                        Vector v2 = vr2.getVector(key);
+                        if (v2 != null) {
+                            copy = v2.copy();
+                        }
+                        Vector v1 = pre_map.get(key);
+                        double[] a = values.get(key);
+                        if (copy != null) {
                             if (mode.equals("cum")) {
-                                Vector copy = precv.copy();
-                                copy.superpose(v, 1, null);
+                                copy.superpose(v1, 1, null);
                                 copy.normalize();
-                                list.add(new TriResultObject(ys + "\t" + key, (float) copy.measureOverlap(precv)));
-                                precv.superpose(v, 1, null);
-                                precv.normalize();
+                                a[i] = copy.measureOverlap(v1);
+                                pre_map.put(key, copy);
                             } else {
-                                list.add(new TriResultObject(ys + "\t" + key, (float) v.measureOverlap(precv)));
-                                precv = v.copy();
+                                a[i] = copy.measureOverlap(v1);
+                                pre_map.put(key, copy);
                             }
                         } else {
-                            list.add(new TriResultObject(ys + "\t" + key, 0));
+                            a[i] = 0;
+                        }
+                        c++;
+                        if (c % 1000 == 0) {
+                            System.out.print(".");
+                            if (c % 100000 == 0) {
+                                System.out.println(c);
+                            }
                         }
                     }
+                }
+                int id = 0;
+                for (String key : keys) {
                     if (format.equals("csv")) {
                         writer.append(String.valueOf(id));
                         writer.append(sep);
                     }
                     writer.append(key);
-                    //list.remove(0);
-                    for (TriResultObject r : list) {
-                        if (r.getScore() >= 0) {
-                            writer.append(sep).append(String.valueOf(r.getScore()));
+                    double[] a = values.get(key);
+                    for (double v : a) {
+                        if (v >= 0) {
+                            writer.append(sep).append(String.valueOf(v));
                         } else {
-                            writer.append(sep).append(String.valueOf(0f));
+                            writer.append(sep).append(String.valueOf(0d));
                         }
                     }
                     writer.newLine();
-                    c++;
-                    if (c % 10000 == 0) {
-                        System.out.println("Processed " + c + " words\t" + ((System.currentTimeMillis() - time) / 100) + " sec.");
-                        time = System.currentTimeMillis();
-                    }
                     id++;
                 }
                 writer.close();
             } else {
                 HelpFormatter helpFormatter = new HelpFormatter();
-                helpFormatter.printHelp("Build sim matrix", options, true);
+                helpFormatter.printHelp("Build sim matrix (memory optimized)", options, true);
             }
         } catch (Exception ex) {
-            Logger.getLogger(BuildSimStatistics.class.getName()).log(Level.SEVERE, null, ex);
+            LOG.log(Level.SEVERE, null, ex);
         }
 
     }
