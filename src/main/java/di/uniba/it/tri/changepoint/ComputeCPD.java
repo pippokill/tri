@@ -48,16 +48,28 @@ public class ComputeCPD {
             CommandLine cmd = cmdParser.parse(options, args);
             if (cmd.hasOption("i") && cmd.hasOption("o")) {
                 try {
+
                     double th = Double.parseDouble(cmd.getOptionValue("t", "0.001"));
                     int s = Integer.parseInt(cmd.getOptionValue("s", "1000"));
                     MeanShiftCPD cpd = new MeanShiftCPD();
                     Map<String, List<Double>> map = cpd.load(cmd.getOptionValue("i"));
                     BufferedWriter writer = new BufferedWriter(new FileWriter(cmd.getOptionValue("o")));
+
+                    //utilizzo la normalizzazione su colonne
+                    map = cpd.normalize2(map);
+
                     Iterator<String> keys = map.keySet().iterator();
                     while (keys.hasNext()) {
                         String word = keys.next();
-                        List<Double> w_ser = cpd.normalize(word, map);
+                        System.out.println(word);
+                        //List<Double> w_ser = cpd.normalize(word, map);
+                        List<Double> w_ser = map.get(word);
+
+                        //elimino il primo elemento che è 0 per cumulative e pointwise
+                        //w_ser.remove(0);
+                        //System.out.println(w_ser);
                         List<Double> w_ms = cpd.meanShift(w_ser);
+
                         List<List<Double>> w_bs = cpd.bootstrapping(w_ser, s);
                         List<Double> w_pv = cpd.computePValue(w_ms, w_bs);
                         Map<Double, Integer> w_cpg = cpd.changePointDetection(w_ser, th, w_pv);
