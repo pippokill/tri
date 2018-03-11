@@ -57,11 +57,11 @@ public class ComputeCPD {
 
                     //utilizzo la normalizzazione su colonne
                     map = cpd.normalize2(map);
-
+                    int l = 0;
                     Iterator<String> keys = map.keySet().iterator();
                     while (keys.hasNext()) {
                         String word = keys.next();
-                        System.out.println(word);
+                        //System.out.println(word);
                         //List<Double> w_ser = cpd.normalize(word, map);
                         List<Double> w_ser = map.get(word);
 
@@ -72,13 +72,23 @@ public class ComputeCPD {
 
                         List<List<Double>> w_bs = cpd.bootstrapping(w_ser, s);
                         List<Double> w_pv = cpd.computePValue(w_ms, w_bs);
-                        Map<Double, Integer> w_cpg = cpd.changePointDetection(w_ser, th, w_pv);
-                        writer.append(word);
-                        for (Map.Entry<Double, Integer> e : w_cpg.entrySet()) {
-                            writer.append(",").append(String.valueOf(e.getKey())).append(",").append(String.valueOf(e.getValue()));
+                        List<ChangePoint> w_cpg = cpd.changePointDetectionList(w_ser, th, w_pv);
+                        if (w_cpg.size() > 0) {
+                            writer.append(word);
+                            for (ChangePoint cp : w_cpg) {
+                                writer.append("\t").append(String.valueOf(cp.getIndex())).append("\t").append(String.valueOf(cp.getValue()));
+                            }
+                            writer.newLine();
                         }
-                        writer.newLine();
+                        l++;
+                        if (l % 1000 == 0) {
+                            System.out.print(".");
+                            if (l % 10000 == 0) {
+                                System.out.println(l);
+                            }
+                        }
                     }
+                    System.out.println(l);
                     writer.close();
                 } catch (IOException ex) {
                     LOG.log(Level.SEVERE, null, ex);

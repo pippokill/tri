@@ -51,6 +51,8 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 
 /**
  *
@@ -66,7 +68,6 @@ public class BuildOccStatistics {
         options = new Options();
         options.addOption("i", true, "Input directory")
                 .addOption("o", true, "Output file")
-                .addOption("f", true, "Output format plain or csv (default=plain)")
                 .addOption("m", true, "Mode: occ, freq, logfreq (default=logfreq)");
     }
 
@@ -77,11 +78,7 @@ public class BuildOccStatistics {
         try {
             CommandLine cmd = cmdParser.parse(options, args);
             if (cmd.hasOption("i") && cmd.hasOption("o")) {
-                String format = cmd.getOptionValue("f", "plain");
                 String mode = cmd.getOptionValue("m", "occ");
-                if (!(format.equals("plain") || format.equals("csv"))) {
-                    throw new IllegalArgumentException("No valid format");
-                }
                 if (!(mode.equals("occ") || mode.equals("freq") || mode.equals("logfreq"))) {
                     throw new IllegalArgumentException("No valid mode");
                 }
@@ -113,46 +110,40 @@ public class BuildOccStatistics {
                     k++;
                 }
                 BufferedWriter writer = new BufferedWriter(new FileWriter(cmd.getOptionValue("o")));
-                if (format.equals("csv")) {
-                    writer.append(",word");
-                    for (File f : files) {
-                        writer.append(",");
-                        writer.append(f.getName().replace("count_", ""));
-                    }
-                    writer.newLine();
+                String[] headers = new String[files.length + 2];
+                headers[0] = "id";
+                headers[1] = "word";
+                for (int j = 0; j < files.length; j++) {
+                    headers[j + 2] = files[j].getName().replace("count_", "");
                 }
+                final CSVPrinter printer = CSVFormat.DEFAULT.withHeader(headers).withDelimiter(';').print(writer);
+
                 int id = 0;
-                char sep = '\t';
-                if (format.equals("csv")) {
-                    sep = ',';
-                }
                 for (Map.Entry<String, int[]> e : cmap.entrySet()) {
-                    if (format.equals("csv")) {
-                        writer.append(String.valueOf(id));
-                        writer.append(sep);
-                    }
-                    writer.append(e.getKey());
+                    printer.print(String.valueOf(id));
+                    printer.print(e.getKey());
                     int[] vc = e.getValue();
                     for (k = 0; k < vc.length; k++) {
                         switch (mode) {
                             case "logfreq":
                                 if (vc[k] == 0) {
-                                    writer.append(sep).append(String.valueOf(0d));
+                                    printer.print(String.valueOf(0d));
                                 } else {
-                                    writer.append(sep).append(String.valueOf(Math.log((double) vc[k] / (double) totalCount[k]) / Math.log(2)));
+                                    printer.print(String.valueOf(Math.log((double) vc[k] / (double) totalCount[k]) / Math.log(2)));
                                 }
                                 break;
                             case "freq":
-                                writer.append(sep).append(String.valueOf((double) vc[k] / (double) totalCount[k]));
+                                printer.print(String.valueOf((double) vc[k] / (double) totalCount[k]));
                                 break;
                             case "occ":
-                                writer.append(sep).append(String.valueOf(vc[k]));
+                                printer.print(String.valueOf(vc[k]));
                                 break;
                         }
                     }
-                    writer.newLine();
+                    printer.println();
                     id++;
                 }
+                printer.close();
                 writer.close();
             } else {
                 HelpFormatter helpFormatter = new HelpFormatter();

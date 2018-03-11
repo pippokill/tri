@@ -56,6 +56,8 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 
 /**
  *
@@ -71,7 +73,6 @@ public class BuildSimStatisticsMO {
         options = new Options();
         options.addOption("i", true, "Input directory")
                 .addOption("o", true, "Output file")
-                .addOption("f", true, "Output format: plain or csv (default=plain)")
                 .addOption("m", true, "Mode: pointwise (point) or cumulative (cum) (default=cum)");
     }
 
@@ -86,11 +87,7 @@ public class BuildSimStatisticsMO {
         try {
             CommandLine cmd = cmdParser.parse(options, args);
             if (cmd.hasOption("i") && cmd.hasOption("o")) {
-                String format = cmd.getOptionValue("f", "plain");
                 String mode = cmd.getOptionValue("m", "cum");
-                if (!(format.equals("plain") || format.equals("csv"))) {
-                    throw new IllegalArgumentException("No valid format");
-                }
                 if (!(mode.equals("point") || mode.equals("cum"))) {
                     throw new IllegalArgumentException("No valid mode");
                 }
@@ -98,18 +95,15 @@ public class BuildSimStatisticsMO {
                 api.setMaindir(cmd.getOptionValue("i"));
                 //load elemental vector
                 api.load("file", null, "-1");
-                char sep = '\t';
                 List<String> years = api.year(0, Integer.MAX_VALUE);
                 BufferedWriter writer = new BufferedWriter(new FileWriter(cmd.getOptionValue("o")));
-                if (format.equals("csv")) {
-                    writer.append(",word");
-                    for (String year : years) {
-                        writer.append(",");
-                        writer.append(year);
-                    }
-                    writer.newLine();
-                    sep = ',';
+                String[] headers = new String[years.size() + 2];
+                headers[0] = "id";
+                headers[1] = "word";
+                for (int j = 0; j < years.size(); j++) {
+                    headers[j + 2] = years.get(j);
                 }
+                final CSVPrinter printer = CSVFormat.DEFAULT.withHeader(headers).withDelimiter(';').print(writer);
                 VectorReader evr = api.getStores().get(Tri.ELEMENTAL_NAME);
                 int dimension = evr.getDimension();
                 LOG.info("Vector dimension: " + dimension);
@@ -166,22 +160,20 @@ public class BuildSimStatisticsMO {
                 }
                 int id = 0;
                 for (String key : keys) {
-                    if (format.equals("csv")) {
-                        writer.append(String.valueOf(id));
-                        writer.append(sep);
-                    }
-                    writer.append(key);
+                    printer.print(String.valueOf(id));
+                    printer.print(key);
                     double[] a = values.get(key);
                     for (double v : a) {
                         if (v >= 0) {
-                            writer.append(sep).append(String.valueOf(v));
+                            printer.print(String.valueOf(v));
                         } else {
-                            writer.append(sep).append(String.valueOf(0d));
+                            printer.print(String.valueOf(0d));
                         }
                     }
-                    writer.newLine();
+                    printer.println();
                     id++;
                 }
+                printer.close();
                 writer.close();
             } else {
                 HelpFormatter helpFormatter = new HelpFormatter();

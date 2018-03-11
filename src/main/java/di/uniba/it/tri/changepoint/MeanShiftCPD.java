@@ -6,18 +6,20 @@
 package di.uniba.it.tri.changepoint;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Reader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.commons.math.stat.StatUtils;
 
 /**
@@ -28,7 +30,7 @@ public class MeanShiftCPD {
 
     private static final Logger LOG = Logger.getLogger(MeanShiftCPD.class.getName());
 
-    private String cvsSplitBy = ",";
+    private String csvSplitBy = ",";
 
     public Map<String, List<Double>> load(String filename) {
         return load(new File(filename));
@@ -42,32 +44,23 @@ public class MeanShiftCPD {
      */
     public Map<String, List<Double>> load(File file) {
         //HashMap of time series
-        System.out.println("Carico file in memoria...");
+        LOG.info("Load data in memory...");
         Map<String, List<Double>> series = new HashMap<>();
-        String line;
         try {
-            BufferedReader br = new BufferedReader(new FileReader(file));
-            //skip first line
-            if (br.ready()) {
-                br.readLine();
-            }
-            while (br.ready()) {
-                line = br.readLine();
-                // split values
-                String[] word = line.split(cvsSplitBy);
-                // build time series
-                List<Double> value = new ArrayList<>();
-                for (int i = 2; i < word.length; i++) {
-
-                    value.add(Double.parseDouble(word[i]));
-
+            Reader in = new FileReader(file);
+            Iterable<CSVRecord> records = CSVFormat.DEFAULT.withDelimiter(';').withFirstRecordAsHeader().parse(in);
+            for (CSVRecord record : records) {
+                //String id = record.get(0);
+                String key = record.get(1);
+                List<Double> values = new ArrayList<>();
+                for (int i = 2; i < record.size(); i++) {
+                    values.add(Double.parseDouble(record.get(i)));
                 }
-
                 // add time series into hashmap                
-                series.put(word[1], value);
+                series.put(key, values);
             }
-            br.close();
-            System.out.println("File caricato.");
+            in.close();
+            LOG.info("Data loaded!");
         } catch (IOException e) {
             LOG.log(Level.SEVERE, null, e);
         }
@@ -75,21 +68,22 @@ public class MeanShiftCPD {
         return series;
     }
 
-    public String getCvsSplitBy() {
-        return cvsSplitBy;
+    public String getCsvSplitBy() {
+        return csvSplitBy;
     }
 
-    public void setCvsSplitBy(String cvsSplitBy) {
-        this.cvsSplitBy = cvsSplitBy;
+    public void setCsvSplitBy(String csvSplitBy) {
+        this.csvSplitBy = csvSplitBy;
     }
 
     /**
-     * normalize time series
+     * Normalize time series
      *
      * @param word
      * @param series
      * @return
      */
+    @Deprecated
     public List<Double> normalize(String word, Map<String, List<Double>> series) {
         List<Double> get = series.get(word);
         if (get == null) {
@@ -118,9 +112,7 @@ public class MeanShiftCPD {
     }
 
     /**
-     * copio la serie in una matrice su cui vengono effettuate le opzioni di
-     * normalizzazione in base alle colonne ricopio il contenuto della matrice
-     * nella map
+     * Normalize time series
      *
      * @param series
      * @return series normalizzata
@@ -128,7 +120,7 @@ public class MeanShiftCPD {
      */
     public Map<String, List<Double>> normalize2(Map<String, List<Double>> series) throws IOException {
 
-        System.out.println("Normalizzazione in corso...");
+        LOG.info("Data normalization...");
         //Map<String, List<Double>> ser_norm = new HashMap<>();
 
         //Sposto la map in una matrice
@@ -191,7 +183,7 @@ public class MeanShiftCPD {
             riga++;
         }
         //writer.close();
-        System.out.println("Normalizzazione effettuata.");
+        LOG.info("Normalization done!");
         return series;
     }
 
@@ -245,7 +237,7 @@ public class MeanShiftCPD {
     }
 
     /**
-     * Compute p-value righe 8-10 algoritmo
+     * Compute p-value (rows 8-10 of the algorithm)
      *
      * @param meanshift
      * @param samples
@@ -280,7 +272,7 @@ public class MeanShiftCPD {
     }
 
     /**
-     * Change point detection righe 11-14 algoritmo
+     * Change point detection (rows 11-14 of the algorithm)
      *
      * @param norm normalized values
      * @param threshold threshold
@@ -316,6 +308,21 @@ public class MeanShiftCPD {
         //gli indici ritornati devono essere incrementati di 1 per coincidere con gli anni
         //poichè non potremmo mai avere un cambiamento al primo anno
         return cgp;
+    }
+    
+    public List<ChangePoint> changePointDetectionList(List<Double> norm, double threshold, List<Double> pValues) {
+        
+
+        //series indicies that overcome the threshold
+        List<ChangePoint> l = new ArrayList<>();
+        for (int j = 0; j < norm.size()-1; j++) {
+            //attenzione ai valori di soglia spesso oltre che piccolissimi sono anche negativi
+            if (norm.get(j) > threshold) {
+                l.add(new ChangePoint(j, pValues.get(j)));
+            }
+        }
+        Collections.sort(l);
+        return l;
     }
 
 }

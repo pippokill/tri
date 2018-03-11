@@ -57,6 +57,8 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVPrinter;
 
 /**
  *
@@ -72,7 +74,6 @@ public class BuildSimStatistics {
         options = new Options();
         options.addOption("i", true, "Input directory")
                 .addOption("o", true, "Output file")
-                .addOption("f", true, "Output format: plain or csv (default=plain)")
                 .addOption("m", true, "Mode: pointwise (point) or cumulative (cum) (default=cum)")
                 .addOption("r", true, "Reader type: mem (memory) or file (file) (default=file)");
     }
@@ -86,11 +87,7 @@ public class BuildSimStatistics {
         try {
             CommandLine cmd = cmdParser.parse(options, args);
             if (cmd.hasOption("i") && cmd.hasOption("o")) {
-                String format = cmd.getOptionValue("f", "plain");
                 String mode = cmd.getOptionValue("m", "cum");
-                if (!(format.equals("plain") || format.equals("csv"))) {
-                    throw new IllegalArgumentException("No valid format");
-                }
                 if (!(mode.equals("point") || mode.equals("cum"))) {
                     throw new IllegalArgumentException("No valid mode");
                 }
@@ -98,18 +95,15 @@ public class BuildSimStatistics {
                 api.setMaindir(cmd.getOptionValue("i"));
                 //load elemental vector
                 api.load("file", null, "-1");
-                char sep = '\t';
                 List<String> years = api.year(0, Integer.MAX_VALUE);
                 BufferedWriter writer = new BufferedWriter(new FileWriter(cmd.getOptionValue("o")));
-                if (format.equals("csv")) {
-                    writer.append(",word");
-                    for (String year : years) {
-                        writer.append(",");
-                        writer.append(year);
-                    }
-                    writer.newLine();
-                    sep = ',';
+                String[] headers = new String[years.size() + 2];
+                headers[0] = "id";
+                headers[1] = "word";
+                for (int j = 0; j < years.size(); j++) {
+                    headers[j + 2] = years.get(j);
                 }
+                final CSVPrinter printer = CSVFormat.DEFAULT.withHeader(headers).withDelimiter(';').print(writer);
                 VectorReader evr = api.getStores().get(Tri.ELEMENTAL_NAME);
                 Iterator<String> keys = evr.getKeys();
                 int c = 0;
@@ -149,20 +143,17 @@ public class BuildSimStatistics {
                             list.add(new TriResultObject(ys + "\t" + key, 0));
                         }
                     }
-                    if (format.equals("csv")) {
-                        writer.append(String.valueOf(id));
-                        writer.append(sep);
-                    }
-                    writer.append(key);
+                    printer.print(String.valueOf(id));
+                    printer.print(key);
                     //list.remove(0);
                     for (TriResultObject r : list) {
                         if (r.getScore() >= 0) {
-                            writer.append(sep).append(String.valueOf(r.getScore()));
+                            printer.print(String.valueOf(r.getScore()));
                         } else {
-                            writer.append(sep).append(String.valueOf(0f));
+                            printer.print(String.valueOf(0f));
                         }
                     }
-                    writer.newLine();
+                    printer.println();
                     c++;
                     if (c % 10000 == 0) {
                         System.out.println("Processed " + c + " words\t" + ((System.currentTimeMillis() - time) / 100) + " sec.");
@@ -170,6 +161,7 @@ public class BuildSimStatistics {
                     }
                     id++;
                 }
+                printer.close();
                 writer.close();
             } else {
                 HelpFormatter helpFormatter = new HelpFormatter();
