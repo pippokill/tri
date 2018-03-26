@@ -16,7 +16,7 @@ public class StandardFilter implements Filter {
     @Override
     public void filter(List<String> tokens) throws Exception {
         for (int i = tokens.size() - 1; i >= 0; i--) {
-            if (tokens.get(i).matches("[^A-Za-z_0-9]+")) {
+            if (!tokens.get(i).matches("^[A-Za-z_0-9]+$") || tokens.get(i).length() < 3) {
                 tokens.remove(i);
             }
         }

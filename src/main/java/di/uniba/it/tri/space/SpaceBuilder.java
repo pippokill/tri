@@ -85,6 +85,8 @@ public class SpaceBuilder {
 
     private Map<String, Double> idfMap;
 
+    private double t = 0.001;
+
     /**
      *
      * @param startingDir
@@ -195,6 +197,14 @@ public class SpaceBuilder {
         this.self = self;
     }
 
+    public double getT() {
+        return t;
+    }
+
+    public void setT(double t) {
+        this.t = t;
+    }
+
     private double idf(String word, double wordOcc) {
         Double idf = idfMap.get(word);
         if (idf == null) {
@@ -254,7 +264,12 @@ public class SpaceBuilder {
                         String word = split[i];
                         Vector ev = elementalSpace.get(word);
                         if (ev != null) {
-                            double w = Integer.parseInt(split[i + 1]);
+                            double f = dict.get(word).doubleValue() / (double) totalOcc; //downsampling
+                            double p = 1;
+                            if (f > t) { //if word frequency is greater than the threshold, compute the probability of consider the word 
+                                p = Math.sqrt(t / f);
+                            }
+                            double w = Double.parseDouble(split[i + 1]) * p;
                             if (idf) {
                                 w = w * idf(word, dict.get(word).doubleValue());
                             }
@@ -327,11 +342,12 @@ public class SpaceBuilder {
         options = new Options();
         options.addOption("c", true, "The directory containing the co-occurrences matrices")
                 .addOption("o", true, "Output directory where WordSpaces will be stored")
-                .addOption("d", true, "The vector dimension (optional, defaults 300)")
-                .addOption("s", true, "The number of seeds (optional, defaults 10)")
-                .addOption("v", true, "The dictionary size (optional, defaults 100000)")
+                .addOption("d", true, "The vector dimension (optional, default 300)")
+                .addOption("s", true, "The number of seeds (optional, default 10)")
+                .addOption("v", true, "The dictionary size (optional, default 100000)")
                 .addOption("idf", true, "Enable IDF (optinal, defaults false)")
-                .addOption("self", true, "Inizialize using random vector (optinal, defaults false)");
+                .addOption("self", true, "Inizialize using random vector (optinal, default false)")
+                .addOption("t", true, "Threshold for downsampling frequent words (optinal, default 0.001)");
     }
 
     /**
@@ -350,6 +366,7 @@ public class SpaceBuilder {
                     builder.setSize(Integer.parseInt(cmd.getOptionValue("v", "100000")));
                     builder.setIdf(Boolean.parseBoolean(cmd.getOptionValue("idf", "false")));
                     builder.setSelf(Boolean.parseBoolean(cmd.getOptionValue("self", "false")));
+                    builder.setT(Double.parseDouble(cmd.getOptionValue("t", "0.001")));
                     builder.build(new File(cmd.getOptionValue("o")));
                 } catch (IOException | NumberFormatException ex) {
                     LOG.log(Level.SEVERE, null, ex);

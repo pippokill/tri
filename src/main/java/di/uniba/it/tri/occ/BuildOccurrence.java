@@ -39,6 +39,7 @@ import com.google.common.collect.HashBiMap;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Multiset.Entry;
+import di.uniba.it.tri.data.DictionaryEntry;
 import di.uniba.it.tri.extractor.Extractor;
 import di.uniba.it.tri.extractor.IterableExtractor;
 import di.uniba.it.tri.tokenizer.Filter;
@@ -52,7 +53,10 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.lang.reflect.Constructor;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -92,6 +96,12 @@ public class BuildOccurrence {
     private TriTokenizer tokenizer;
 
     private String filenameRegExp = "^.+$";
+
+    private Map<String, Integer> dict;
+
+    private Set<String> vocabulary;
+
+    private int vocSize = 50000;
 
     /**
      * Get the RegExp used to fetch files
@@ -217,6 +227,83 @@ public class BuildOccurrence {
         this.swFilter = swFilter;
     }
 
+    public int getVocSize() {
+        return vocSize;
+    }
+
+    public void setVocSize(int vocSize) {
+        this.vocSize = vocSize;
+    }
+
+    private void buildDict(File startingDir, int year) throws Exception {
+        File[] listFiles = startingDir.listFiles();
+        for (File file : listFiles) {
+            int eindex = file.getName().lastIndexOf(".");
+            String filename;
+            if (eindex < 0) {
+                filename = file.getName();
+            } else {
+                filename = file.getName().substring(0, eindex);
+            }
+            //if (filename.matches(filenameRegExp) && filename.lastIndexOf("_") > -1 && filename.endsWith(String.valueOf(year))) {
+            if (filename.matches(filenameRegExp) && filename.contains(String.valueOf(year))) {
+                logger.log(Level.INFO, "Working file: {0}", file.getName());
+                StringReader reader = extractor.extract(file);
+                List<String> tokens = tokenizer.getTokens(reader);
+                if (swFilter != null) {
+                    swFilter.filter(tokens);
+                }
+                if (filter != null) {
+                    filter.filter(tokens);
+                }
+                for (String t : tokens) {
+                    Integer c = dict.get(t);
+                    if (c == null) {
+                        dict.put(t, 1);
+                    } else {
+                        dict.put(t, c + 1);
+                    }
+                }
+            }
+        }
+    }
+
+    private void buildDictIterable(File startingDir, int year) throws Exception {
+        File[] listFiles = startingDir.listFiles();
+        for (File file : listFiles) {
+            int eindex = file.getName().lastIndexOf(".");
+            String filename;
+            if (eindex < 0) {
+                filename = file.getName();
+            } else {
+                filename = file.getName().substring(0, eindex);
+            }
+            //if (filename.matches(filenameRegExp) && filename.lastIndexOf("_") > -1 && filename.endsWith(String.valueOf(year))) {
+            if (filename.matches(filenameRegExp) && filename.contains(String.valueOf(year))) {
+                logger.log(Level.INFO, "Working file: {0}", file.getName());
+                itExtractor.extract(file);
+                while (itExtractor.hasNext()) {
+                    List<String> tokens = tokenizer.getTokens(itExtractor.next());
+                    if (swFilter != null) {
+                        swFilter.filter(tokens);
+                    }
+                    if (filter != null) {
+                        filter.filter(tokens);
+                    }
+                    for (String t : tokens) {
+                        Integer c = dict.get(t);
+                        if (c == null) {
+                            dict.put(t, 1);
+                        } else {
+                            dict.put(t, c + 1);
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+
     private OccOutput count(File startingDir, int year) throws Exception {
         Map<Integer, Multiset<Integer>> map = new HashMap<>();
         BiMap<String, Integer> dict = HashBiMap.create();
@@ -242,28 +329,30 @@ public class BuildOccurrence {
                     filter.filter(tokens);
                 }
                 for (int i = 0; i < tokens.size(); i++) {
-                    int start = Math.max(0, i - winsize);
-                    int end = Math.min(tokens.size() - 1, i + winsize);
-                    for (int j = start; j < end; j++) {
-                        if (i != j) {
-                            Integer tid = dict.get(tokens.get(i));
-                            if (tid == null) {
-                                tid = id;
-                                dict.put(tokens.get(i), tid);
-                                id++;
+                    if (vocabulary.contains(tokens.get(i))) {
+                        int start = Math.max(0, i - winsize);
+                        int end = Math.min(tokens.size() - 1, i + winsize);
+                        for (int j = start; j < end; j++) {
+                            if (i != j && vocabulary.contains(tokens.get(j))) {
+                                Integer tid = dict.get(tokens.get(i));
+                                if (tid == null) {
+                                    tid = id;
+                                    dict.put(tokens.get(i), tid);
+                                    id++;
+                                }
+                                Multiset<Integer> multiset = map.get(tid);
+                                if (multiset == null) {
+                                    multiset = HashMultiset.create();
+                                    map.put(tid, multiset);
+                                }
+                                Integer tjid = dict.get(tokens.get(j));
+                                if (tjid == null) {
+                                    tjid = id;
+                                    dict.put(tokens.get(j), tjid);
+                                    id++;
+                                }
+                                multiset.add(tjid);
                             }
-                            Multiset<Integer> multiset = map.get(tid);
-                            if (multiset == null) {
-                                multiset = HashMultiset.create();
-                                map.put(tid, multiset);
-                            }
-                            Integer tjid = dict.get(tokens.get(j));
-                            if (tjid == null) {
-                                tjid = id;
-                                dict.put(tokens.get(j), tjid);
-                                id++;
-                            }
-                            multiset.add(tjid);
                         }
                     }
                 }
@@ -298,28 +387,30 @@ public class BuildOccurrence {
                         filter.filter(tokens);
                     }
                     for (int i = 0; i < tokens.size(); i++) {
-                        int start = Math.max(0, i - winsize);
-                        int end = Math.min(tokens.size() - 1, i + winsize);
-                        for (int j = start; j < end; j++) {
-                            if (i != j) {
-                                Integer tid = dict.get(tokens.get(i));
-                                if (tid == null) {
-                                    tid = id;
-                                    dict.put(tokens.get(i), tid);
-                                    id++;
+                        if (vocabulary.contains(tokens.get(i))) {
+                            int start = Math.max(0, i - winsize);
+                            int end = Math.min(tokens.size() - 1, i + winsize);
+                            for (int j = start; j < end; j++) {
+                                if (i != j && vocabulary.contains(tokens.get(j))) {
+                                    Integer tid = dict.get(tokens.get(i));
+                                    if (tid == null) {
+                                        tid = id;
+                                        dict.put(tokens.get(i), tid);
+                                        id++;
+                                    }
+                                    Multiset<Integer> multiset = map.get(tid);
+                                    if (multiset == null) {
+                                        multiset = HashMultiset.create();
+                                        map.put(tid, multiset);
+                                    }
+                                    Integer tjid = dict.get(tokens.get(j));
+                                    if (tjid == null) {
+                                        tjid = id;
+                                        dict.put(tokens.get(j), tjid);
+                                        id++;
+                                    }
+                                    multiset.add(tjid);
                                 }
-                                Multiset<Integer> multiset = map.get(tid);
-                                if (multiset == null) {
-                                    multiset = HashMultiset.create();
-                                    map.put(tid, multiset);
-                                }
-                                Integer tjid = dict.get(tokens.get(j));
-                                if (tjid == null) {
-                                    tjid = id;
-                                    dict.put(tokens.get(j), tjid);
-                                    id++;
-                                }
-                                multiset.add(tjid);
                             }
                         }
                     }
@@ -339,6 +430,7 @@ public class BuildOccurrence {
     public void process(File startingDir) throws Exception {
         logger.log(Level.INFO, "Starting dir: {0}", startingDir.getAbsolutePath());
         logger.log(Level.INFO, "Output dir: {0}", outputDir.getAbsolutePath());
+        logger.log(Level.INFO, "Vocabulary size: {0}", vocSize);
         logger.log(Level.INFO, "Window size: {0}", winsize);
         File[] listFiles = startingDir.listFiles();
         int minYear = Integer.MAX_VALUE;
@@ -378,8 +470,38 @@ public class BuildOccurrence {
         }
         logger.log(Level.INFO, "Form year: {0}", minYear);
         logger.log(Level.INFO, "To year: {0}", maxYear);
+        logger.log(Level.INFO, "Build dictionary...");
+        dict = new HashMap<>();
         for (int k = minYear; k <= maxYear; k++) {
-            logger.log(Level.INFO, "Counting year: {0}", k);
+            //logger.log(Level.INFO, "Dict for year: {0}", k);
+            if (extractor != null) {
+                buildDict(startingDir, k);
+            } else if (itExtractor != null) {
+                buildDictIterable(startingDir, k);
+            }
+        }
+        logger.log(Level.INFO, "Dictionary size: {0}", dict.size());
+        logger.log(Level.INFO, "Build vocabulary...");
+        List<DictionaryEntry> ld = new ArrayList<>();
+        for (Map.Entry<String, Integer> de : dict.entrySet()) {
+            ld.add(new DictionaryEntry(de.getKey(), de.getValue()));
+        }
+        dict.clear();
+        dict = null;
+        Collections.sort(ld, Collections.reverseOrder());
+        if (ld.size() > vocSize) {
+            ld = ld.subList(0, vocSize);
+        }
+        vocabulary = new HashSet<>();
+        for (DictionaryEntry de : ld) {
+            vocabulary.add(de.getWord());
+        }
+        ld.clear();
+        ld = null;
+        System.gc();
+        logger.log(Level.INFO, "Vocabulary size: {0}", vocabulary.size());
+        for (int k = minYear; k <= maxYear; k++) {
+            //logger.log(Level.INFO, "Counting year: {0}", k);
             OccOutput count = null;
             if (extractor != null) {
                 count = count(startingDir, k);
@@ -424,7 +546,8 @@ public class BuildOccurrence {
                 .addOption("r", true, "Regular expression used to fetch files (optional, default \".+\")")
                 .addOption("s", true, "Stop word file (optional)")
                 .addOption("f", true, "Filter class (optional)")
-                .addOption("k", true, "Load keyword list");
+                .addOption("k", true, "Load keyword list")
+                .addOption("n", true, "Size of the vocabulary (optional, default 50000)");
     }
 
     /**
@@ -477,7 +600,7 @@ public class BuildOccurrence {
                         builder.setFilter(filter);
                     }
                     builder.setFilenameRegExp(cmd.getOptionValue("r", "^.+$"));
-
+                    builder.setVocSize(Integer.parseInt(cmd.getOptionValue("n", "50000")));
                     builder.process(new File(cmd.getOptionValue("c")));
                 } catch (Exception ex) {
                     logger.log(Level.SEVERE, null, ex);
