@@ -231,15 +231,16 @@ public class CommandWrapper {
         if (split.length == 2) {
             tri.load(split[1], null, null);
         } else if (split.length > 3) {
-            if (split[3].matches("[0-9]+")) {
-                tri.load(split[1], split[2], split[3]);
-            } else {
-                throw new Exception("not valid year");
+            for (int k = 2; k < split.length; k = k + 2) {
+                if (split[k + 1].matches("[0-9]+")) {
+                    tri.load(split[1], split[k], split[k + 1]);
+                } else {
+                    throw new Exception("not valid year");
+                }
             }
         } else {
             throw new Exception("load syntax error");
         }
-
     }
 
     //load a VectorReader
