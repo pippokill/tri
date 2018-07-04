@@ -1,4 +1,4 @@
-Temporal Random Indexing (v. 0.60 - 29/02/2016)
+Temporal Random Indexing (v. 0.70 - 04/07/2018)
 ===============================================
 
 General info
