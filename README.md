@@ -78,6 +78,7 @@ List of available tokenizers:
 *   TriItStandardTokenizer: standard tokenizer for Italian
 *   TriStandardTokenizer: standard tokenizer for English
 *   TriTwitterTokenizer: tokenizer for tweets
+*   TriWhiteSpaceTokenizer: tokenize by white space, doesn't modify the token
 
 List of available filters:
 *   BasicLatinFilter: filter for no basic latin characters
