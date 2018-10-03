@@ -1,5 +1,11 @@
-Temporal Random Indexing (v. 0.70 - 04/07/2018)
+Temporal Random Indexing (v. 0.80 - 03/10/2018)
 ===============================================
+
+**Ver 0.80 Update**
+-------------------
+
+- Important fix in window size
+- Replaced HashMap and MultiSet with fastutil collections
 
 General info
 ------------

@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>di.uniba.it</groupId>
     <artifactId>TemporalRandomIndexing</artifactId>
-    <version>0.7-SNAPSHOT</version>
+    <version>0.8-SNAPSHOT</version>
     <packaging>jar</packaging>
     <dependencies>
         <dependency>
