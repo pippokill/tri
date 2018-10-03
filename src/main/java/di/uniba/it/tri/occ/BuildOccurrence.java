@@ -356,8 +356,6 @@ public class BuildOccurrence {
                 }
             }
         }
-        System.out.println(map);
-        System.out.println(countDict);
         return new OccOutput(map, countDict);
     }
 
