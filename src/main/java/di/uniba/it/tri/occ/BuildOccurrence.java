@@ -245,7 +245,6 @@ public class BuildOccurrence {
             } else {
                 filename = file.getName().substring(0, eindex);
             }
-            //if (filename.matches(filenameRegExp) && filename.lastIndexOf("_") > -1 && filename.endsWith(String.valueOf(year))) {
             if (filename.matches(filenameRegExp) && filename.contains(String.valueOf(year))) {
                 logger.log(Level.INFO, "Working file: {0}", file.getName());
                 StringReader reader = extractor.extract(file);
@@ -278,7 +277,6 @@ public class BuildOccurrence {
             } else {
                 filename = file.getName().substring(0, eindex);
             }
-            //if (filename.matches(filenameRegExp) && filename.lastIndexOf("_") > -1 && filename.endsWith(String.valueOf(year))) {
             if (filename.matches(filenameRegExp) && filename.contains(String.valueOf(year))) {
                 logger.log(Level.INFO, "Working file: {0}", file.getName());
                 itExtractor.extract(file);
@@ -317,7 +315,6 @@ public class BuildOccurrence {
             } else {
                 filename = file.getName().substring(0, eindex);
             }
-            //if (filename.matches(filenameRegExp) && filename.lastIndexOf("_") > -1 && filename.endsWith(String.valueOf(year))) {
             if (filename.matches(filenameRegExp) && filename.contains(String.valueOf(year))) {
                 logger.log(Level.INFO, "Working file: {0}", file.getName());
                 StringReader reader = extractor.extract(file);
@@ -374,7 +371,6 @@ public class BuildOccurrence {
             } else {
                 filename = file.getName().substring(0, eindex);
             }
-            //if (filename.matches(filenameRegExp) && filename.lastIndexOf("_") > -1 && filename.endsWith(String.valueOf(year))) {
             if (filename.matches(filenameRegExp) && filename.contains(String.valueOf(year))) {
                 logger.log(Level.INFO, "Working file: {0}", file.getName());
                 itExtractor.extract(file);
@@ -437,26 +433,15 @@ public class BuildOccurrence {
         int maxYear = -Integer.MAX_VALUE;
         Pattern yp = Pattern.compile("[0-9]+");
         for (File file : listFiles) {
-            /*int i = file.getName().lastIndexOf("_");
-            if (i > -1 && file.getName().substring(0, i).matches(filenameRegExp)) {
-                int eindex = file.getName().lastIndexOf(".");
-                String filename;
-                if (eindex < 0) {
-                    filename = file.getName();
-                } else {
-                    filename = file.getName().substring(0, eindex);
-                }
-                int year = Integer.parseInt(filename.substring(filename.length() - 4, filename.length()));               
-                if (year < minYear) {
-                    minYear = year;
-                }
-                if (year > maxYear) {
-                    maxYear = year;
-                }
-            }*/
-            int i = file.getName().lastIndexOf(".");
-            if (i > -1 && file.getName().substring(0, i).matches(filenameRegExp)) {
-                Matcher matcher = yp.matcher(file.getName().substring(0, i));
+            int eindex = file.getName().lastIndexOf(".");
+            String filename;
+            if (eindex < 0) {
+                filename = file.getName();
+            } else {
+                filename = file.getName().substring(0, eindex);
+            }
+            if (filename.matches(filenameRegExp)) {
+                Matcher matcher = yp.matcher(filename);
                 if (matcher.find()) {
                     int year = Integer.parseInt(matcher.group());
                     if (year < minYear) {
