@@ -306,7 +306,7 @@ public class BuildOccurrence {
 
     private OccOutput count(File startingDir, int year) throws Exception {
         Map<Integer, Multiset<Integer>> map = new HashMap<>();
-        BiMap<String, Integer> dict = HashBiMap.create();
+        BiMap<String, Integer> countDict = HashBiMap.create();
         int id = 0;
         File[] listFiles = startingDir.listFiles();
         for (File file : listFiles) {
@@ -334,10 +334,10 @@ public class BuildOccurrence {
                         int end = Math.min(tokens.size(), i + winsize);
                         for (int j = start; j < end; j++) {
                             if (i != j && vocabulary.contains(tokens.get(j))) {
-                                Integer tid = dict.get(tokens.get(i));
+                                Integer tid = countDict.get(tokens.get(i));
                                 if (tid == null) {
                                     tid = id;
-                                    dict.put(tokens.get(i), tid);
+                                    countDict.put(tokens.get(i), tid);
                                     id++;
                                 }
                                 Multiset<Integer> multiset = map.get(tid);
@@ -345,10 +345,10 @@ public class BuildOccurrence {
                                     multiset = HashMultiset.create();
                                     map.put(tid, multiset);
                                 }
-                                Integer tjid = dict.get(tokens.get(j));
+                                Integer tjid = countDict.get(tokens.get(j));
                                 if (tjid == null) {
                                     tjid = id;
-                                    dict.put(tokens.get(j), tjid);
+                                    countDict.put(tokens.get(j), tjid);
                                     id++;
                                 }
                                 multiset.add(tjid);
@@ -358,12 +358,12 @@ public class BuildOccurrence {
                 }
             }
         }
-        return new OccOutput(map, dict);
+        return new OccOutput(map, countDict);
     }
 
     private OccOutput countIterable(File startingDir, int year) throws Exception {
         Map<Integer, Multiset<Integer>> map = new HashMap<>();
-        BiMap<String, Integer> dict = HashBiMap.create();
+        BiMap<String, Integer> countDict = HashBiMap.create();
         int id = 0;
         File[] listFiles = startingDir.listFiles();
         for (File file : listFiles) {
@@ -392,10 +392,10 @@ public class BuildOccurrence {
                             int end = Math.min(tokens.size(), i + winsize);
                             for (int j = start; j < end; j++) {
                                 if (i != j && vocabulary.contains(tokens.get(j))) {
-                                    Integer tid = dict.get(tokens.get(i));
+                                    Integer tid = countDict.get(tokens.get(i));
                                     if (tid == null) {
                                         tid = id;
-                                        dict.put(tokens.get(i), tid);
+                                        countDict.put(tokens.get(i), tid);
                                         id++;
                                     }
                                     Multiset<Integer> multiset = map.get(tid);
@@ -403,10 +403,10 @@ public class BuildOccurrence {
                                         multiset = HashMultiset.create();
                                         map.put(tid, multiset);
                                     }
-                                    Integer tjid = dict.get(tokens.get(j));
+                                    Integer tjid = countDict.get(tokens.get(j));
                                     if (tjid == null) {
                                         tjid = id;
-                                        dict.put(tokens.get(j), tjid);
+                                        countDict.put(tokens.get(j), tjid);
                                         id++;
                                     }
                                     multiset.add(tjid);
@@ -417,7 +417,7 @@ public class BuildOccurrence {
                 }
             }
         }
-        return new OccOutput(map, dict);
+        return new OccOutput(map, countDict);
     }
 
     /**
