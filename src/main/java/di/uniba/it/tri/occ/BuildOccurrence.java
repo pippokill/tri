@@ -46,6 +46,7 @@ import di.uniba.it.tri.tokenizer.Filter;
 import di.uniba.it.tri.tokenizer.KeywordFinder;
 import di.uniba.it.tri.tokenizer.StopWordFilter;
 import di.uniba.it.tri.tokenizer.TriTokenizer;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -328,8 +329,8 @@ public class BuildOccurrence {
                 for (int i = 0; i < tokens.size(); i++) {
                     if (vocabulary.contains(tokens.get(i))) {
                         int start = Math.max(0, i - winsize);
-                        int end = Math.min(tokens.size(), i + winsize);
-                        for (int j = start; j < end; j++) {
+                        int end = Math.min(tokens.size() - 1, i + winsize);
+                        for (int j = start; j <= end; j++) {
                             if (i != j && vocabulary.contains(tokens.get(j))) {
                                 Integer tid = countDict.get(tokens.get(i));
                                 if (tid == null) {
@@ -355,6 +356,8 @@ public class BuildOccurrence {
                 }
             }
         }
+        System.out.println(map);
+        System.out.println(countDict);
         return new OccOutput(map, countDict);
     }
 
@@ -385,8 +388,8 @@ public class BuildOccurrence {
                     for (int i = 0; i < tokens.size(); i++) {
                         if (vocabulary.contains(tokens.get(i))) {
                             int start = Math.max(0, i - winsize);
-                            int end = Math.min(tokens.size(), i + winsize);
-                            for (int j = start; j < end; j++) {
+                            int end = Math.min(tokens.size() - 1, i + winsize);
+                            for (int j = start; j <= end; j++) {
                                 if (i != j && vocabulary.contains(tokens.get(j))) {
                                     Integer tid = countDict.get(tokens.get(i));
                                     if (tid == null) {
