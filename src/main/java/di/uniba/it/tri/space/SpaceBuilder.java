@@ -39,6 +39,9 @@ import di.uniba.it.tri.vectors.Vector;
 import di.uniba.it.tri.vectors.VectorFactory;
 import di.uniba.it.tri.vectors.VectorStoreUtils;
 import di.uniba.it.tri.vectors.VectorType;
+import it.unimi.dsi.fastutil.objects.Object2DoubleOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -47,7 +50,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Random;
@@ -66,25 +68,25 @@ import org.apache.commons.cli.ParseException;
  * @author pierpaolo
  */
 public class SpaceBuilder {
-
+    
     private static final Logger LOG = Logger.getLogger(SpaceBuilder.class.getName());
-
+    
     private int dimension = 200;
-
+    
     private int seed = 10;
-
+    
     private File startingDir;
-
+    
     private int size = 100000;
-
+    
     private boolean self = false;
-
+    
     private long totalOcc = 0;
-
+    
     private boolean idf = false;
-
+    
     private Map<String, Double> idfMap;
-
+    
     private double t = 0.001;
 
     /**
@@ -116,11 +118,11 @@ public class SpaceBuilder {
         this.dimension = dimension;
         this.seed = seed;
     }
-
+    
     public boolean isIdf() {
         return idf;
     }
-
+    
     public void setIdf(boolean idf) {
         this.idf = idf;
     }
@@ -188,23 +190,23 @@ public class SpaceBuilder {
     public void setSize(int size) {
         this.size = size;
     }
-
+    
     public boolean isSelf() {
         return self;
     }
-
+    
     public void setSelf(boolean self) {
         this.self = self;
     }
-
+    
     public double getT() {
         return t;
     }
-
+    
     public void setT(double t) {
         this.t = t;
     }
-
+    
     private double idf(String word, double wordOcc) {
         Double idf = idfMap.get(word);
         if (idf == null) {
@@ -227,7 +229,7 @@ public class SpaceBuilder {
         LOG.log(Level.INFO, "Dictionary size {0}", dict.size());
         LOG.log(Level.INFO, "Use self random vector: {0}", self);
         LOG.log(Level.INFO, "IDF score: {0}", idf);
-        Map<String, Vector> elementalSpace = new HashMap<>();
+        Map<String, Vector> elementalSpace = new Object2ObjectOpenHashMap<>();
         //create random vectors space
         LOG.info("Building elemental vectors...");
         totalOcc = 0;
@@ -242,7 +244,7 @@ public class SpaceBuilder {
         File[] listFiles = startingDir.listFiles();
         for (File file : listFiles) {
             //init idf for each year
-            idfMap = new HashMap<>();
+            idfMap = new Object2DoubleOpenHashMap<>();
             LOG.log(Level.INFO, "Space: {0}", file.getAbsolutePath());
             BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))));
             DataOutputStream outputStream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(outputDir.getAbsolutePath() + "/" + file.getName() + ".vectors")));
@@ -290,10 +292,10 @@ public class SpaceBuilder {
         LOG.log(Level.INFO, "Save elemental vectors in dir: {0}", outputDir.getAbsolutePath());
         VectorStoreUtils.saveSpace(new File(outputDir.getAbsolutePath() + "/vectors.elemental"), elementalSpace, VectorType.REAL, dimension, seed);
     }
-
+    
     private Map<String, Integer> buildDictionary(File startingDir, int maxSize) throws IOException {
         LOG.log(Level.INFO, "Building dictionary: {0}", startingDir.getAbsolutePath());
-        Map<String, Integer> cmap = new HashMap<>();
+        Map<String, Integer> cmap = new Object2IntOpenHashMap<>();
         File[] listFiles = startingDir.listFiles();
         for (File file : listFiles) {
             LOG.log(Level.INFO, "Working on file: {0}", file.getName());
@@ -329,17 +331,17 @@ public class SpaceBuilder {
         }
         cmap.clear();
         cmap = null;
-        Map<String, Integer> dict = new HashMap<>(queue.size());
+        Map<String, Integer> dict = new Object2IntOpenHashMap<>(queue.size());
         for (DictionaryEntry de : queue) {
             dict.put(de.getWord(), de.getCounter());
         }
         return dict;
     }
-
+    
     static Options options;
-
+    
     static CommandLineParser cmdParser = new BasicParser();
-
+    
     static {
         options = new Options();
         options.addOption("c", true, "The directory containing the co-occurrences matrices")

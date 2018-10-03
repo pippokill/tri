@@ -40,6 +40,9 @@ import di.uniba.it.tri.vectors.Vector;
 import di.uniba.it.tri.vectors.VectorFactory;
 import di.uniba.it.tri.vectors.VectorStoreUtils;
 import di.uniba.it.tri.vectors.VectorType;
+import it.unimi.dsi.fastutil.objects.Object2DoubleOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -49,7 +52,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Random;
@@ -222,7 +224,7 @@ public class SpaceBuilderReflective {
         logger.log(Level.INFO, "Use self random vector: {0}", self);
         logger.log(Level.INFO, "IDF score: {0}", idf);
         logger.log(Level.INFO, "Number iterations: {0}", numReflective);
-        Map<String, Vector> elementalSpace = new HashMap<>();
+        Map<String, Vector> elementalSpace = new Object2ObjectOpenHashMap<>();
         //create random vectors space
         logger.info("Building elemental vectors...");
         totalOcc = 0;
@@ -243,7 +245,7 @@ public class SpaceBuilderReflective {
             File[] listFiles = startingDir.listFiles();
             for (File file : listFiles) {
                 //init idf for each year
-                idfMap = new HashMap<>();
+                idfMap = new Object2DoubleOpenHashMap<>();
                 logger.log(Level.INFO, "Space: {0}", file.getAbsolutePath());
                 BufferedReader reader = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(file))));
                 DataOutputStream outputStream = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(outputSubDir.getAbsolutePath() + "/" + file.getName() + ".vectors")));
@@ -310,7 +312,7 @@ public class SpaceBuilderReflective {
 
     private Map<String, Integer> buildDictionary(File startingDir, int maxSize) throws IOException {
         logger.log(Level.INFO, "Building dictionary: {0}", startingDir.getAbsolutePath());
-        Map<String, Integer> cmap = new HashMap<>();
+        Map<String, Integer> cmap = new Object2IntOpenHashMap<>();
         File[] listFiles = startingDir.listFiles();
         for (File file : listFiles) {
             logger.log(Level.INFO, "Working on file: {0}", file.getName());
@@ -346,7 +348,7 @@ public class SpaceBuilderReflective {
         }
         cmap.clear();
         cmap = null;
-        Map<String, Integer> dict = new HashMap<>(queue.size());
+        Map<String, Integer> dict = new Object2IntOpenHashMap<>(queue.size());
         for (DictionaryEntry de : queue) {
             dict.put(de.getWord(), de.getCounter());
         }
