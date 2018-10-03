@@ -36,9 +36,6 @@ package di.uniba.it.tri.occ;
 
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Multiset;
-import com.google.common.collect.Multiset.Entry;
 import di.uniba.it.tri.data.DictionaryEntry;
 import di.uniba.it.tri.extractor.Extractor;
 import di.uniba.it.tri.extractor.IterableExtractor;
@@ -46,7 +43,10 @@ import di.uniba.it.tri.tokenizer.Filter;
 import di.uniba.it.tri.tokenizer.KeywordFinder;
 import di.uniba.it.tri.tokenizer.StopWordFilter;
 import di.uniba.it.tri.tokenizer.TriTokenizer;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -56,8 +56,6 @@ import java.io.StringReader;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -304,7 +302,7 @@ public class BuildOccurrence {
     }
 
     private OccOutput count(File startingDir, int year) throws Exception {
-        Map<Integer, Multiset<Integer>> map = new HashMap<>();
+        Map<Integer, Map<Integer, Integer>> map = new Int2ObjectOpenHashMap<>();
         BiMap<String, Integer> countDict = HashBiMap.create();
         int id = 0;
         File[] listFiles = startingDir.listFiles();
@@ -338,10 +336,10 @@ public class BuildOccurrence {
                                     countDict.put(tokens.get(i), tid);
                                     id++;
                                 }
-                                Multiset<Integer> multiset = map.get(tid);
-                                if (multiset == null) {
-                                    multiset = HashMultiset.create();
-                                    map.put(tid, multiset);
+                                Map<Integer, Integer> countMap = map.get(tid);
+                                if (countMap == null) {
+                                    countMap = new Int2IntOpenHashMap();
+                                    map.put(tid, countMap);
                                 }
                                 Integer tjid = countDict.get(tokens.get(j));
                                 if (tjid == null) {
@@ -349,7 +347,12 @@ public class BuildOccurrence {
                                     countDict.put(tokens.get(j), tjid);
                                     id++;
                                 }
-                                multiset.add(tjid);
+                                Integer c = countMap.get(tjid);
+                                if (c == null) {
+                                    countMap.put(tjid, 1);
+                                } else {
+                                    countMap.put(tjid, c + 1);
+                                }
                             }
                         }
                     }
@@ -360,7 +363,7 @@ public class BuildOccurrence {
     }
 
     private OccOutput countIterable(File startingDir, int year) throws Exception {
-        Map<Integer, Multiset<Integer>> map = new HashMap<>();
+        Map<Integer, Map<Integer, Integer>> map = new Int2ObjectOpenHashMap<>();
         BiMap<String, Integer> countDict = HashBiMap.create();
         int id = 0;
         File[] listFiles = startingDir.listFiles();
@@ -395,10 +398,10 @@ public class BuildOccurrence {
                                         countDict.put(tokens.get(i), tid);
                                         id++;
                                     }
-                                    Multiset<Integer> multiset = map.get(tid);
-                                    if (multiset == null) {
-                                        multiset = HashMultiset.create();
-                                        map.put(tid, multiset);
+                                    Map<Integer, Integer> countMap = map.get(tid);
+                                    if (countMap == null) {
+                                        countMap = new Int2IntOpenHashMap();
+                                        map.put(tid, countMap);
                                     }
                                     Integer tjid = countDict.get(tokens.get(j));
                                     if (tjid == null) {
@@ -406,7 +409,12 @@ public class BuildOccurrence {
                                         countDict.put(tokens.get(j), tjid);
                                         id++;
                                     }
-                                    multiset.add(tjid);
+                                    Integer c = countMap.get(tjid);
+                                    if (c == null) {
+                                        countMap.put(tjid, 1);
+                                    } else {
+                                        countMap.put(tjid, c + 1);
+                                    }
                                 }
                             }
                         }
@@ -457,7 +465,7 @@ public class BuildOccurrence {
         logger.log(Level.INFO, "Form year: {0}", minYear);
         logger.log(Level.INFO, "To year: {0}", maxYear);
         logger.log(Level.INFO, "Build dictionary...");
-        dict = new HashMap<>();
+        dict = new Object2IntOpenHashMap<>();
         for (int k = minYear; k <= maxYear; k++) {
             //logger.log(Level.INFO, "Dict for year: {0}", k);
             if (extractor != null) {
@@ -478,7 +486,7 @@ public class BuildOccurrence {
         if (ld.size() > vocSize) {
             ld = ld.subList(0, vocSize);
         }
-        vocabulary = new HashSet<>();
+        vocabulary = new ObjectOpenHashSet<>();
         for (DictionaryEntry de : ld) {
             vocabulary.add(de.getWord());
         }
@@ -505,12 +513,12 @@ public class BuildOccurrence {
         Iterator<String> keys = count.getDict().keySet().iterator();
         while (keys.hasNext()) {
             String key = keys.next();
-            Multiset<Integer> mset = count.getOcc().get(count.getDict().get(key));
+            Map<Integer, Integer> mset = count.getOcc().get(count.getDict().get(key));
             if (mset != null) {
                 writer.append(key);
-                Set<Multiset.Entry<Integer>> entrySet = mset.entrySet();
-                for (Entry<Integer> entry : entrySet) {
-                    writer.append("\t").append(count.getDict().inverse().get(entry.getElement())).append("\t").append(String.valueOf(entry.getCount()));
+                Set<Map.Entry<Integer, Integer>> entrySet = mset.entrySet();
+                for (Map.Entry<Integer, Integer> entry : entrySet) {
+                    writer.append("\t").append(count.getDict().inverse().get(entry.getKey())).append("\t").append(String.valueOf(entry.getValue()));
                 }
                 writer.newLine();
             }
@@ -602,20 +610,20 @@ public class BuildOccurrence {
 
     static class OccOutput {
 
-        private Map<Integer, Multiset<Integer>> occ;
+        private Map<Integer, Map<Integer, Integer>> occ;
 
         private BiMap<String, Integer> dict;
 
-        public OccOutput(Map<Integer, Multiset<Integer>> occ, BiMap<String, Integer> dict) {
+        public OccOutput(Map<Integer, Map<Integer, Integer>> occ, BiMap<String, Integer> dict) {
             this.occ = occ;
             this.dict = dict;
         }
 
-        public Map<Integer, Multiset<Integer>> getOcc() {
+        public Map<Integer, Map<Integer, Integer>> getOcc() {
             return occ;
         }
 
-        public void setOcc(Map<Integer, Multiset<Integer>> occ) {
+        public void setOcc(Map<Integer, Map<Integer, Integer>> occ) {
             this.occ = occ;
         }
 
