@@ -1,8 +1,8 @@
 Temporal Random Indexing (v. 0.80 - 03/10/2018)
 ===============================================
 
-**Ver 0.80 Update**
--------------------
+Ver 0.80 Update
+---------------
 
 - Important fix in window size
 - Replaced HashMap and MultiSet with fastutil collections
@@ -80,16 +80,17 @@ List of available extractors:
 *   TxtExtractor: one text file for each document
 
 List of available tokenizers:
-*   TriEnStandardTokenizer: standard tokenizer
+*   TriEnStandardTokenizer: standard tokenizer for English
 *   TriItStandardTokenizer: standard tokenizer for Italian
-*   TriStandardTokenizer: standard tokenizer for English
+*   TriStandardTokenizer: standard tokenizer
 *   TriTwitterTokenizer: tokenizer for tweets
 *   TriWhiteSpaceTokenizer: tokenize by white space, doesn't modify the token
 
 List of available filters:
 *   BasicLatinFilter: filter for no basic latin characters
 *   LetterFilter: filter for no letter characters
-*   StandardFilter: it removes tokens that do not match "[^A-Za-z_0-9]+"
+*   StandardFilter: it removes tokens that do not match "[A-Za-z_0-9]+" or have length < 3
+*   StandardFilterNoNumber: it removes tokens that do not match "[A-Za-z]+" or have length < 3
 
 **di.uniba.it.tri.space.SpaceBuilder**
 
