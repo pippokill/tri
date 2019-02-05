@@ -57,7 +57,7 @@ public class ComputeCPDv2 {
                     int n = Integer.parseInt(cmd.getOptionValue("s", "1000"));
                     ComputeCPTTaylor cpd = new ComputeCPTTaylor();
                     Reader in = new FileReader(cmd.getOptionValue("i"));
-                    Iterable<CSVRecord> records = CSVFormat.DEFAULT.withDelimiter(';').withFirstRecordAsHeader().parse(in);
+                    Iterable<CSVRecord> records = CSVFormat.DEFAULT.withDelimiter(',').withFirstRecordAsHeader().parse(in);
                     BufferedWriter writer = new BufferedWriter(new FileWriter(cmd.getOptionValue("o")));
                     int l = 0;
                     for (CSVRecord record : records) {
