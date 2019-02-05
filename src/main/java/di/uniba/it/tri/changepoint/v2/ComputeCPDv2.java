@@ -10,8 +10,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.cli.BasicParser;
@@ -21,6 +20,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 
 /**
@@ -57,7 +57,15 @@ public class ComputeCPDv2 {
                     int n = Integer.parseInt(cmd.getOptionValue("s", "1000"));
                     ComputeCPTTaylor cpd = new ComputeCPTTaylor();
                     Reader in = new FileReader(cmd.getOptionValue("i"));
-                    Iterable<CSVRecord> records = CSVFormat.DEFAULT.withDelimiter(',').withFirstRecordAsHeader().parse(in);
+
+                    CSVParser parser = CSVFormat.DEFAULT.withDelimiter(',').withFirstRecordAsHeader().parse(in);
+                    List<CSVRecord> records = parser.getRecords();
+                    Map<String, Integer> map = parser.getHeaderMap();
+                    Map<Integer, String> headerMap = new HashMap<>();
+                    for (String name : map.keySet()){
+                        headerMap.put(map.get(name),name);
+                    }
+
                     BufferedWriter writer = new BufferedWriter(new FileWriter(cmd.getOptionValue("o")));
                     int l = 0;
                     for (CSVRecord record : records) {
@@ -71,7 +79,10 @@ public class ComputeCPDv2 {
                         if (!points.isEmpty()) {
                             writer.append(word);
                             for (BootstrappingResult r : points) {
-                                writer.append("\t").append(String.valueOf(r.getSeriesIdx())).append("\t").append(String.valueOf(r.getConfidence()));
+                                writer.append("\t")
+                                        .append(headerMap.get(r.getSeriesIdx()+2)) // was String.valueOf(r.getSeriesIdx())
+                                        .append("\t")
+                                        .append(String.valueOf(r.getConfidence()));
                             }
                             writer.newLine();
                         }
