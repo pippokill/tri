@@ -42,7 +42,8 @@ public class ComputeCPDv2 {
         options.addOption("i", true, "Input file")
                 .addOption("o", true, "Output file")
                 .addOption("c", true, "Confidance (default 0.95)")
-                .addOption("s", true, "Number of samples (default 1000)");
+                .addOption("s", true, "Number of samples (default 1000)")
+                .addOption("d", false, "Drops the first column of the temporal series.");
     }
 
     /**
@@ -69,10 +70,15 @@ public class ComputeCPDv2 {
                     BufferedWriter writer = new BufferedWriter(new FileWriter(cmd.getOptionValue("o")));
                     int l = 0;
                     for (CSVRecord record : records) {
+                        int start_of_series = 2;
                         double[] datapoint = new double[record.size() - 2];
+                        if (cmd.hasOption("d")){
+                            datapoint = new double[record.size() - 3];
+                            start_of_series = 3;
+                        }
                         String word = record.get(1);
-                        for (int i = 2; i < record.size(); i++) {
-                            datapoint[i - 2] = Double.parseDouble(record.get(i));
+                        for (int i = start_of_series; i < record.size(); i++) {
+                            datapoint[i - start_of_series] = Double.parseDouble(record.get(i));
                         }
                         List<BootstrappingResult> points = new ArrayList<>();
                         cpd.changePointDetection(datapoint, conf, n, points, 0);
@@ -80,7 +86,7 @@ public class ComputeCPDv2 {
                             writer.append(word);
                             for (BootstrappingResult r : points) {
                                 writer.append("\t")
-                                        .append(headerMap.get(r.getSeriesIdx()+2)) // was String.valueOf(r.getSeriesIdx())
+                                        .append(headerMap.get(r.getSeriesIdx() + start_of_series)) // was String.valueOf(r.getSeriesIdx())
                                         .append("\t")
                                         .append(String.valueOf(r.getConfidence()));
                             }
