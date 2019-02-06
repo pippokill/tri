@@ -74,7 +74,7 @@ public class ComputeCPTTaylor {
             int j = bootstrapping.getSeriesIdx();
             bootstrapping.setSeriesIdx(j + offset);
             points.add(bootstrapping);
-            changePointDetection(Arrays.copyOfRange(datapoint, 0, j), conf, n, points, 0);
+            changePointDetection(Arrays.copyOfRange(datapoint, 0, j), conf, n, points, offset);
             changePointDetection(Arrays.copyOfRange(datapoint, j + 1, datapoint.length), conf, n, points, j + offset + 1);
         }
     }
