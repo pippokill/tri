@@ -310,15 +310,15 @@ public class MeanShiftCPD {
         return cgp;
     }
     
-    public List<ChangePoint> changePointDetectionList(List<Double> norm, double threshold, List<Double> pValues) {
+    public List<ChangePointResults> changePointDetectionList(List<Double> norm, double threshold, List<Double> pValues) {
         
 
         //series indicies that overcome the threshold
-        List<ChangePoint> l = new ArrayList<>();
+        List<ChangePointResults> l = new ArrayList<>();
         for (int j = 0; j < norm.size()-1; j++) {
             //attenzione ai valori di soglia spesso oltre che piccolissimi sono anche negativi
             if (norm.get(j) > threshold) {
-                l.add(new ChangePoint(j, pValues.get(j)));
+                l.add(new ChangePointResults(j, pValues.get(j)));
             }
         }
         Collections.sort(l);

@@ -75,7 +75,8 @@ public class BuildSimStatistics {
         options.addOption("i", true, "Input directory")
                 .addOption("o", true, "Output file")
                 .addOption("m", true, "Mode: pointwise (point) or cumulative (cum) (default=cum)")
-                .addOption("r", true, "Reader type: mem (memory) or file (file) (default=file)");
+                .addOption("r", true, "Reader type: mem (memory) or file (file) (default=file)")
+                .addOption("f", false, "Filter low similarity");
     }
 
     /**
@@ -91,6 +92,7 @@ public class BuildSimStatistics {
                 if (!(mode.equals("point") || mode.equals("cum"))) {
                     throw new IllegalArgumentException("No valid mode");
                 }
+                boolean filterLowSim = cmd.hasOption("f");
                 Tri api = new Tri();
                 api.setMaindir(cmd.getOptionValue("i"));
                 //load elemental vector
@@ -148,7 +150,11 @@ public class BuildSimStatistics {
                     //list.remove(0);
                     for (TriResultObject r : list) {
                         if (r.getScore() >= 0) {
-                            printer.print(String.valueOf(r.getScore()));
+                            if (filterLowSim && r.getScore() < 0.15) {
+                                printer.print(0f);
+                            } else {
+                                printer.print(String.valueOf(r.getScore()));
+                            }
                         } else {
                             printer.print(String.valueOf(0f));
                         }

@@ -72,10 +72,10 @@ public class ComputeCPD {
 
                         List<List<Double>> w_bs = cpd.bootstrapping(w_ser, s);
                         List<Double> w_pv = cpd.computePValue(w_ms, w_bs);
-                        List<ChangePoint> w_cpg = cpd.changePointDetectionList(w_ser, th, w_pv);
+                        List<ChangePointResults> w_cpg = cpd.changePointDetectionList(w_ser, th, w_pv);
                         if (w_cpg.size() > 0) {
                             writer.append(word);
-                            for (ChangePoint cp : w_cpg) {
+                            for (ChangePointResults cp : w_cpg) {
                                 writer.append("\t").append(String.valueOf(cp.getIndex())).append("\t").append(String.valueOf(cp.getValue()));
                             }
                             writer.newLine();

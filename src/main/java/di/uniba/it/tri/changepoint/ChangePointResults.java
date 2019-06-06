@@ -9,16 +9,16 @@ package di.uniba.it.tri.changepoint;
  *
  * @author pierpaolo
  */
-public class ChangePoint implements Comparable<ChangePoint> {
+public class ChangePointResults implements Comparable<ChangePointResults> {
     
     private int index;
     
     private double value;
 
-    public ChangePoint() {
+    public ChangePointResults() {
     }
 
-    public ChangePoint(int index, double value) {
+    public ChangePointResults(int index, double value) {
         this.index = index;
         this.value = value;
     }
@@ -40,7 +40,7 @@ public class ChangePoint implements Comparable<ChangePoint> {
     }
 
     @Override
-    public int compareTo(ChangePoint o) {
+    public int compareTo(ChangePointResults o) {
         return Double.compare(this.value, o.getValue());
     }
     

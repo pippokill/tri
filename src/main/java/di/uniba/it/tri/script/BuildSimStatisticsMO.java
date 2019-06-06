@@ -73,7 +73,8 @@ public class BuildSimStatisticsMO {
         options = new Options();
         options.addOption("i", true, "Input directory")
                 .addOption("o", true, "Output file")
-                .addOption("m", true, "Mode: pointwise (point) or cumulative (cum) (default=cum)");
+                .addOption("m", true, "Mode: pointwise (point) or cumulative (cum) (default=cum)")
+                .addOption("f", false, "Filter low similarity");
     }
 
     private static final Logger LOG = Logger.getLogger(BuildSimStatisticsMO.class.getName());
@@ -91,6 +92,7 @@ public class BuildSimStatisticsMO {
                 if (!(mode.equals("point") || mode.equals("cum"))) {
                     throw new IllegalArgumentException("No valid mode");
                 }
+                boolean filterLowSim = cmd.hasOption("f");
                 Tri api = new Tri();
                 api.setMaindir(cmd.getOptionValue("i"));
                 //load elemental vector
@@ -165,7 +167,11 @@ public class BuildSimStatisticsMO {
                     double[] a = values.get(key);
                     for (double v : a) {
                         if (v >= 0) {
-                            printer.print(String.valueOf(v));
+                            if (filterLowSim && v < 0.15) {
+                                printer.print(0d);
+                            } else {
+                                printer.print(String.valueOf(v));
+                            }
                         } else {
                             printer.print(String.valueOf(0d));
                         }

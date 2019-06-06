@@ -24,9 +24,10 @@ import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 
 /**
- * This CPD method is based on: "Change-Point Analysis: A Powerful New Tool For Detecting Changes", WAYNE A. TAYLOR
+ * This CPD method is based on: "Change-Point Analysis: A Powerful New Tool For
+ * Detecting Changes", WAYNE A. TAYLOR
  * https://variation.com/change-point-analysis-a-powerful-new-tool-for-detecting-changes/
- * 
+ *
  * @author pierpaolo
  */
 public class ComputeCPDv2 {
@@ -43,7 +44,8 @@ public class ComputeCPDv2 {
                 .addOption("o", true, "Output file")
                 .addOption("c", true, "Confidance (default 0.95)")
                 .addOption("s", true, "Number of samples (default 1000)")
-                .addOption("d", false, "Drops the first column of the temporal series.");
+                .addOption("d", false, "Drops the first column of the temporal series.")
+                .addOption("f", false, "Filter zero datapoint from the output");
     }
 
     /**
@@ -56,15 +58,16 @@ public class ComputeCPDv2 {
                 try {
                     double conf = Double.parseDouble(cmd.getOptionValue("c", "0.95"));
                     int n = Integer.parseInt(cmd.getOptionValue("s", "1000"));
+                    boolean filterZero = cmd.hasOption("f");
                     ComputeCPTTaylor cpd = new ComputeCPTTaylor();
                     Reader in = new FileReader(cmd.getOptionValue("i"));
 
-                    CSVParser parser = CSVFormat.DEFAULT.withDelimiter(',').withFirstRecordAsHeader().parse(in);
+                    CSVParser parser = CSVFormat.DEFAULT.withDelimiter(';').withFirstRecordAsHeader().parse(in);
                     List<CSVRecord> records = parser.getRecords();
                     Map<String, Integer> map = parser.getHeaderMap();
                     Map<Integer, String> headerMap = new HashMap<>();
-                    for (String name : map.keySet()){
-                        headerMap.put(map.get(name),name);
+                    for (String name : map.keySet()) {
+                        headerMap.put(map.get(name), name);
                     }
 
                     BufferedWriter writer = new BufferedWriter(new FileWriter(cmd.getOptionValue("o")));
@@ -72,7 +75,7 @@ public class ComputeCPDv2 {
                     for (CSVRecord record : records) {
                         int start_of_series = 2;
                         double[] datapoint = new double[record.size() - 2];
-                        if (cmd.hasOption("d")){
+                        if (cmd.hasOption("d")) {
                             datapoint = new double[record.size() - 3];
                             start_of_series = 3;
                         }
@@ -82,6 +85,13 @@ public class ComputeCPDv2 {
                         }
                         List<BootstrappingResult> points = new ArrayList<>();
                         cpd.changePointDetection(datapoint, conf, n, points, 0);
+                        if (filterZero) {
+                            for (int i = points.size() - 1; i >= 0; i--) {
+                                if (Double.parseDouble(record.get(points.get(i).getSeriesIdx() + start_of_series)) == 0) {
+                                    points.remove(i);
+                                }
+                            }
+                        }
                         if (!points.isEmpty()) {
                             writer.append(word);
                             for (BootstrappingResult r : points) {
