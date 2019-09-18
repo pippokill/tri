@@ -25,3 +25,4 @@ nbbuild/
 dist/
 nbdist/
 .nb-gradle/
+/src/main/java/di/uniba/it/tri/changepoint/oed/

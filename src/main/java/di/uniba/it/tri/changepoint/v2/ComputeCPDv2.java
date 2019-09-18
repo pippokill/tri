@@ -61,8 +61,8 @@ public class ComputeCPDv2 {
                     boolean filterZero = cmd.hasOption("f");
                     ComputeCPTTaylor cpd = new ComputeCPTTaylor();
                     Reader in = new FileReader(cmd.getOptionValue("i"));
-
-                    CSVParser parser = CSVFormat.DEFAULT.withDelimiter(';').withFirstRecordAsHeader().parse(in);
+                    
+                    CSVParser parser = CSVFormat.DEFAULT.withDelimiter(',').withFirstRecordAsHeader().parse(in);
                     List<CSVRecord> records = parser.getRecords();
                     Map<String, Integer> map = parser.getHeaderMap();
                     Map<Integer, String> headerMap = new HashMap<>();
@@ -87,7 +87,7 @@ public class ComputeCPDv2 {
                         cpd.changePointDetection(datapoint, conf, n, points, 0);
                         if (filterZero) {
                             for (int i = points.size() - 1; i >= 0; i--) {
-                                if (Double.parseDouble(record.get(points.get(i).getSeriesIdx() + start_of_series)) == 0) {
+                                if (Double.parseDouble(record.get(points.get(i).getSeriesIdx() + start_of_series)) <= 0) {
                                     points.remove(i);
                                 }
                             }

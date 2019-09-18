@@ -34,8 +34,17 @@
  */
 package di.uniba.it.tri.script.gbooks;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import org.apache.commons.lang3.tuple.Pair;
 
 /**
  *
@@ -46,6 +55,10 @@ public class GBooksUtils {
     public static final Set<String> POSTAGS = new HashSet<>();
 
     public static final Set<String> TAGS = new HashSet<>();
+
+    public static final String REG_EXP_IT = "[a-zèéàòùì]+";
+
+    public static final String REG_EXP_EN = "[a-z]+";
 
     static {
         POSTAGS.add("NOUN");
@@ -98,6 +111,72 @@ public class GBooksUtils {
             }
         }
         return ngram;
+    }
+
+    public static Ngram parseNgramV2(String line, String regexp) throws Exception {
+        String[] split = line.split("\\t+");
+        Ngram ngram = new Ngram(Integer.parseInt(split[1]), Integer.parseInt(split[2]), Integer.parseInt(split[3]));
+        String[] tokens = split[0].split("\\s+");
+        for (String token : tokens) {
+            if (token.matches(regexp)) {
+                ngram.getTokens().add(token);
+            } else {
+                ngram.getTokens().add("_");
+            }
+        }
+        return ngram;
+    }
+
+    public static Ngram parseNgramFromPlain(String line) throws Exception {
+        String[] split = line.split("\\t+");
+        Ngram ngram = new Ngram(-1, Integer.parseInt(split[1]), -1);
+        String[] tokens = split[0].split("\\s+");
+        for (String token : tokens) {
+            ngram.getTokens().add(token);
+        }
+        return ngram;
+    }
+
+    public static Map<String, Integer> filterDictByFreq(File dictfile, int minfreq) throws IOException {
+        Map<String, Integer> dict = new HashMap<>();
+        BufferedReader reader = new BufferedReader(new FileReader(dictfile));
+        while (reader.ready()) {
+            String[] split = reader.readLine().split("\t");
+            int f = Integer.parseInt(split[1]);
+            if (f >= minfreq) {
+                dict.put(split[0], f);
+            }
+        }
+        reader.close();
+        return dict;
+    }
+
+    public static Map<String, Integer> filterDictBySize(File dictfile, int size) throws IOException {
+        Map<String, Integer> dict = new HashMap<>();
+        BufferedReader reader = new BufferedReader(new FileReader(dictfile));
+        int s = 0;
+        while (reader.ready() && s < size) {
+            String[] split = reader.readLine().split("\t");
+            dict.put(split[0], Integer.parseInt(split[1]));
+            s++;
+        }
+        reader.close();
+        return dict;
+    }
+
+    public static List<NgramPair> getContexts(List<String> tokens) {
+        List<NgramPair> list = new ArrayList<>();
+        int k = 0;
+        for (int i = 1; i < tokens.size(); i++) {
+            list.add(new NgramPair(tokens.get(k), tokens.get(i)));
+            list.add(new NgramPair(tokens.get(i), tokens.get(k)));
+        }
+        k = tokens.size() - 1;
+        for (int i = 0; i < tokens.size() - 1; i++) {
+            list.add(new NgramPair(tokens.get(k), tokens.get(i)));
+            list.add(new NgramPair(tokens.get(i), tokens.get(k)));
+        }
+        return list;
     }
 
 }
