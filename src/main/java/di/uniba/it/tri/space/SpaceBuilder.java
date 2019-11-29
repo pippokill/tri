@@ -39,6 +39,7 @@ import di.uniba.it.tri.vectors.Vector;
 import di.uniba.it.tri.vectors.VectorFactory;
 import di.uniba.it.tri.vectors.VectorStoreUtils;
 import di.uniba.it.tri.vectors.VectorType;
+import di.uniba.it.tri.vectors.VectorUtils;
 import it.unimi.dsi.fastutil.objects.Object2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
@@ -50,6 +51,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Random;
@@ -68,26 +71,31 @@ import org.apache.commons.cli.ParseException;
  * @author pierpaolo
  */
 public class SpaceBuilder {
-    
+
     private static final Logger LOG = Logger.getLogger(SpaceBuilder.class.getName());
-    
+
     private int dimension = 200;
-    
+
     private int seed = 10;
-    
+
     private File startingDir;
-    
+
     private int size = 100000;
-    
+
     private boolean self = false;
-    
+
     private long totalOcc = 0;
-    
+
     private boolean idf = false;
-    
+
     private Map<String, Double> idfMap;
-    
+
     private double t = 0.001;
+
+    //negative sampling
+    private int ns = 0;
+
+    private static final int NS_SIZE = 100000000;
 
     /**
      *
@@ -118,11 +126,11 @@ public class SpaceBuilder {
         this.dimension = dimension;
         this.seed = seed;
     }
-    
+
     public boolean isIdf() {
         return idf;
     }
-    
+
     public void setIdf(boolean idf) {
         this.idf = idf;
     }
@@ -190,30 +198,38 @@ public class SpaceBuilder {
     public void setSize(int size) {
         this.size = size;
     }
-    
+
     public boolean isSelf() {
         return self;
     }
-    
+
     public void setSelf(boolean self) {
         this.self = self;
     }
-    
+
     public double getT() {
         return t;
     }
-    
+
     public void setT(double t) {
         this.t = t;
     }
-    
+
+    public int getNs() {
+        return ns;
+    }
+
+    public void setNs(int ns) {
+        this.ns = ns;
+    }
+
     private double idf(String word, double wordOcc) {
-        Double idf = idfMap.get(word);
-        if (idf == null) {
-            idf = Math.log((double) totalOcc / wordOcc) / Math.log(2);
-            idfMap.put(word, idf);
+        Double idfvalue = idfMap.get(word);
+        if (idfvalue == null) {
+            idfvalue = Math.log((double) totalOcc / wordOcc) / Math.log(2);
+            idfMap.put(word, idfvalue);
         }
-        return idf;
+        return idfvalue;
     }
 
     /**
@@ -229,7 +245,12 @@ public class SpaceBuilder {
         LOG.log(Level.INFO, "Dictionary size {0}", dict.size());
         LOG.log(Level.INFO, "Use self random vector: {0}", self);
         LOG.log(Level.INFO, "IDF score: {0}", idf);
+        LOG.log(Level.INFO, "Negative sampling: {0}", ns);
         Map<String, Vector> elementalSpace = new Object2ObjectOpenHashMap<>();
+        Map<String, Vector> semanticSpace = null;
+        if (ns > 0) {
+            semanticSpace = new Object2ObjectOpenHashMap<>();
+        }
         //create random vectors space
         LOG.info("Building elemental vectors...");
         totalOcc = 0;
@@ -238,6 +259,27 @@ public class SpaceBuilder {
             elementalSpace.put(word, VectorFactory.generateRandomVector(VectorType.REAL, dimension, seed, random));
             //compute total occurrences taking into account the dictionary
             totalOcc += dict.get(word);
+        }
+        //init negative sample
+        String[] dictArray = null;
+        int[] na = null;
+        if (ns > 0) {
+            dictArray = new String[dict.size()];
+            na = new int[NS_SIZE];
+            dictArray = dict.keySet().toArray(dictArray);
+            double normd = Math.pow(totalOcc, 0.75);
+            int i = 0;
+            double d1 = Math.pow(dict.get(dictArray[i]).doubleValue(), 0.75) / normd;
+            for (int a = 0; a < na.length; a++) {
+                na[a] = i;
+                if (((double) a / (double) NS_SIZE) > d1) {
+                    i++;
+                    d1 += Math.pow(dict.get(dictArray[i]).doubleValue(), 0.75) / normd;
+                }
+                if (i >= dictArray.length) {
+                    i = dictArray.length - 1;
+                }
+            }
         }
         LOG.log(Level.INFO, "Total occurrences {0}", totalOcc);
         LOG.log(Level.INFO, "Building spaces: {0}", startingDir.getAbsolutePath());
@@ -279,20 +321,66 @@ public class SpaceBuilder {
                         }
                         i = i + 2;
                     }
+                    /*if (ns > 0) {
+                        for (int k = 0; k < ns; k++) {
+                            int idx = random.nextInt(na.length);
+                            Vector rw = elementalSpace.get(dictArray[na[idx]]);
+                            List<Vector> lv = new ArrayList<>();
+                            lv.add(rw);
+                            lv.add(v);
+                            VectorUtils.orthogonalizeVectors(lv);
+                        }
+                    }
                     if (!v.isZeroVector()) {
                         v.normalize();
                         outputStream.writeUTF(token);
                         v.writeToStream(outputStream);
+                    }*/
+                    if (ns > 0) {
+                        if (!v.isZeroVector()) {
+                            v.normalize();
+                            semanticSpace.put(token, v);
+                        }
+                    } else {
+                        if (!v.isZeroVector()) {
+                            v.normalize();
+                            outputStream.writeUTF(token);
+                            v.writeToStream(outputStream);
+                        }
                     }
                 }
             }
             reader.close();
+            if (ns > 0) {
+                LOG.log(Level.INFO, "Performing negative sampling...");
+                for (String word : dictArray) {
+                    Vector sv = semanticSpace.get(word);
+                    if (sv != null) {
+                        int k = 0;
+                        while (k < ns) {
+                            int idx = random.nextInt(na.length);
+                            String negword = dictArray[na[idx]];
+                            if (!negword.equals(word)) {
+                                Vector nw = semanticSpace.get(negword);
+                                List<Vector> lv = new ArrayList<>();
+                                lv.add(nw);
+                                lv.add(sv);
+                                VectorUtils.orthogonalizeVectors(lv);
+                                k++;
+                            }
+                        }
+                        sv.normalize();
+                        outputStream.writeUTF(word);
+                        sv.writeToStream(outputStream);
+                    }
+                }
+            }
             outputStream.close();
         }
         LOG.log(Level.INFO, "Save elemental vectors in dir: {0}", outputDir.getAbsolutePath());
         VectorStoreUtils.saveSpace(new File(outputDir.getAbsolutePath() + "/vectors.elemental"), elementalSpace, VectorType.REAL, dimension, seed);
     }
-    
+
     private Map<String, Integer> buildDictionary(File startingDir, int maxSize) throws IOException {
         LOG.log(Level.INFO, "Building dictionary: {0}", startingDir.getAbsolutePath());
         Map<String, Integer> cmap = new Object2IntOpenHashMap<>();
@@ -337,11 +425,11 @@ public class SpaceBuilder {
         }
         return dict;
     }
-    
+
     static Options options;
-    
+
     static CommandLineParser cmdParser = new BasicParser();
-    
+
     static {
         options = new Options();
         options.addOption("c", true, "The directory containing the co-occurrences matrices")
@@ -351,7 +439,8 @@ public class SpaceBuilder {
                 .addOption("v", true, "The dictionary size (optional, default 100000)")
                 .addOption("idf", true, "Enable IDF (optinal, defaults false)")
                 .addOption("self", true, "Inizialize using random vector (optinal, default false)")
-                .addOption("t", true, "Threshold for downsampling frequent words (optinal, default 0.001)");
+                .addOption("t", true, "Threshold for downsampling frequent words (optinal, default 0.001)")
+                .addOption("ns", true, "Number of negative samples (optinal, default 0)");
     }
 
     /**
@@ -371,6 +460,7 @@ public class SpaceBuilder {
                     builder.setIdf(Boolean.parseBoolean(cmd.getOptionValue("idf", "false")));
                     builder.setSelf(Boolean.parseBoolean(cmd.getOptionValue("self", "false")));
                     builder.setT(Double.parseDouble(cmd.getOptionValue("t", "0.001")));
+                    builder.setNs(Integer.parseInt(cmd.getOptionValue("ns", "0")));
                     builder.build(new File(cmd.getOptionValue("o")));
                 } catch (IOException | NumberFormatException ex) {
                     LOG.log(Level.SEVERE, null, ex);

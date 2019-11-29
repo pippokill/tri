@@ -58,11 +58,11 @@ public class TestReadStore {
      */
     public static void main(String[] args) {
         try {
-            VectorReader reader=new MemoryVectorReader(new File("/media/pierpaolo/SAMlinux/tri/tri_en_1year/space/plain_1997.occ.gz.vectors"));
+            VectorReader reader=new MemoryVectorReader(new File("/home/pierpaolo/data/BNC/tri/vectors_t/count_1.vectors"));
             reader.init();
-            Vector vector = reader.getVector("culture");
-            System.out.println(vector.toString());
-            List<ObjectVector> nearestVectors = TemporalSpaceUtils.getNearestVectors(reader, vector, 10);
+            Vector vector = reader.getVector("pizza");
+            //System.out.println(vector.toString());
+            List<ObjectVector> nearestVectors = TemporalSpaceUtils.getNearestVectors(reader, vector, 50);
             for (ObjectVector ov:nearestVectors) {
                 System.out.println(ov);
             }
