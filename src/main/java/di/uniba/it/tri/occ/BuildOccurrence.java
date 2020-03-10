@@ -416,7 +416,7 @@ public class BuildOccurrence {
                 .addOption("r", true, "Regular expression used to fetch files (optional, default \".+\")")
                 .addOption("s", true, "Stop word file (optional)")
                 .addOption("f", true, "Filter class (optional)")
-                .addOption("k", true, "Load keyword list")
+                .addOption("k", true, "Load keyword list (optional)")
                 .addOption("n", true, "Size of the vocabulary (optional, default 50000)");
     }
 

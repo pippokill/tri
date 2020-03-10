@@ -416,7 +416,7 @@ public class PositionalTri {
                 .addOption("r", true, "Regular expression used to fetch files (optional, default \".+\")")
                 .addOption("s", true, "Stop word file (optional)")
                 .addOption("f", true, "Filter class (optional)")
-                .addOption("k", true, "Load keyword list")
+                .addOption("k", true, "Load keyword list (optional)")
                 .addOption("n", true, "Size of the vocabulary (optional, default 50000)")
                 .addOption("dim", true, "The vector dimension (optional, default 500)")
                 .addOption("seed", true, "The number of seeds (optional, default 10)")
