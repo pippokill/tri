@@ -58,9 +58,9 @@ public class TestReadStore {
      */
     public static void main(String[] args) {
         try {
-            VectorReader reader=new MemoryVectorReader(new File("/home/pierpaolo/data/BNC/tri/vectors_t/count_1.vectors"));
+            VectorReader reader=new MemoryVectorReader(new File("/media/pierpaolo/KINGSTON/semeval/tri_pos/sv_2.v"));
             reader.init();
-            Vector vector = reader.getVector("pizza");
+            Vector vector = reader.getVector("attack");
             //System.out.println(vector.toString());
             List<ObjectVector> nearestVectors = TemporalSpaceUtils.getNearestVectors(reader, vector, 50);
             for (ObjectVector ov:nearestVectors) {

@@ -9,19 +9,22 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.StringReader;
 
 /**
  * Extract textual content from a paper in the AAN corpus
  *
  * @author pierpaolo
  */
-public class AANExtractor implements Extractor {
+public class AANExtractor implements IterableExtractor {
+
+    private StringBuilder sb = null;
+
+    private boolean consumed = false;
 
     @Override
-    public StringReader extract(File txtfile) throws IOException {
+    public void extract(File txtfile) throws IOException {
         BufferedReader reader = new BufferedReader(new FileReader(txtfile));
-        StringBuilder sb = new StringBuilder();
+        sb = new StringBuilder();
         boolean exit = false;
         while (reader.ready() && !exit) {
             String line = reader.readLine();
@@ -32,7 +35,17 @@ public class AANExtractor implements Extractor {
             }
         }
         reader.close();
-        return new StringReader(sb.toString());
+    }
+
+    @Override
+    public boolean hasNext() throws IOException {
+        return !consumed;
+    }
+
+    @Override
+    public String next() throws IOException {
+        consumed = true;
+        return sb.toString();
     }
 
 }

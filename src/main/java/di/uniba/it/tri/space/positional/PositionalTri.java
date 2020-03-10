@@ -32,37 +32,32 @@
  * GNU GENERAL PUBLIC LICENSE - Version 3, 29 June 2007
  *
  */
-package di.uniba.it.tri.occ;
+package di.uniba.it.tri.space.positional;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
+import di.uniba.it.tri.occ.*;
 import di.uniba.it.tri.data.DictionaryEntry;
 import di.uniba.it.tri.extractor.IterableExtractor;
 import di.uniba.it.tri.tokenizer.Filter;
 import di.uniba.it.tri.tokenizer.KeywordFinder;
 import di.uniba.it.tri.tokenizer.StopWordFilter;
 import di.uniba.it.tri.tokenizer.TriTokenizer;
-import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import di.uniba.it.tri.vectors.PermutationUtils;
+import di.uniba.it.tri.vectors.Vector;
+import di.uniba.it.tri.vectors.VectorFactory;
+import di.uniba.it.tri.vectors.VectorStoreUtils;
+import di.uniba.it.tri.vectors.VectorType;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import java.io.BufferedWriter;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStreamWriter;
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.PriorityQueue;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.zip.GZIPOutputStream;
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -74,13 +69,13 @@ import org.apache.commons.cli.ParseException;
  *
  * @author pierpaolo
  */
-public class BuildOccurrence {
+public class PositionalTri {
 
     private int winsize = 5;
 
     private File outputDir = new File("./");
 
-    private static final Logger LOG = Logger.getLogger(BuildOccurrence.class.getName());
+    private static final Logger LOG = Logger.getLogger(PositionalTri.class.getName());
 
     private IterableExtractor extractor = null;
 
@@ -92,11 +87,15 @@ public class BuildOccurrence {
 
     private String filenameRegExp = "^.+$";
 
-    private Map<String, Integer> dict;
-
-    private Set<String> vocabulary;
-
     private int vocSize = 50000;
+
+    private int dimension = 500;
+
+    private int seed = 10;
+
+    private long totalOcc = 0;
+
+    private double t = 0.001;
 
     /**
      * Get the RegExp used to fetch files
@@ -212,7 +211,31 @@ public class BuildOccurrence {
         this.vocSize = vocSize;
     }
 
-    private void buildDict(File startingDir, int year) throws Exception {
+    public int getDimension() {
+        return dimension;
+    }
+
+    public void setDimension(int dimension) {
+        this.dimension = dimension;
+    }
+
+    public int getSeed() {
+        return seed;
+    }
+
+    public void setSeed(int seed) {
+        this.seed = seed;
+    }
+
+    public double getT() {
+        return t;
+    }
+
+    public void setT(double t) {
+        this.t = t;
+    }
+
+    private void buildDict(File startingDir, Map<String, Integer> cmap, int year) throws Exception {
         File[] listFiles = startingDir.listFiles();
         for (File file : listFiles) {
             int eindex = file.getName().lastIndexOf(".");
@@ -234,23 +257,20 @@ public class BuildOccurrence {
                         filter.filter(tokens);
                     }
                     for (String t : tokens) {
-                        Integer c = dict.get(t);
+                        Integer c = cmap.get(t);
                         if (c == null) {
-                            dict.put(t, 1);
+                            cmap.put(t, 1);
                         } else {
-                            dict.put(t, c + 1);
+                            cmap.put(t, c + 1);
                         }
                     }
-
                 }
             }
         }
     }
 
-    private OccOutput count(File startingDir, int year) throws Exception {
-        Map<Integer, Map<Integer, Integer>> map = new Int2ObjectOpenHashMap<>();
-        BiMap<String, Integer> countDict = HashBiMap.create();
-        int id = 0;
+    private void buildSemanticVectors(File startingDir, File outputFile, int year, Map<String, Integer> dict, Map<String, Vector> randomVectors) throws Exception {
+        Map<String, Vector> semanticVectors = new Object2ObjectOpenHashMap<>(dict.size());
         File[] listFiles = startingDir.listFiles();
         for (File file : listFiles) {
             int eindex = file.getName().lastIndexOf(".");
@@ -272,34 +292,23 @@ public class BuildOccurrence {
                         filter.filter(tokens);
                     }
                     for (int i = 0; i < tokens.size(); i++) {
-                        if (vocabulary.contains(tokens.get(i))) {
+                        if (dict.containsKey(tokens.get(i))) {
+                            Vector sv = semanticVectors.get(tokens.get(i));
+                            if (sv == null) {
+                                sv = VectorFactory.createZeroVector(VectorType.REAL, dimension);
+                                semanticVectors.put(tokens.get(i), sv);
+                            }
                             int start = Math.max(0, i - winsize);
                             int end = Math.min(tokens.size() - 1, i + winsize);
                             for (int j = start; j <= end; j++) {
-                                if (i != j && vocabulary.contains(tokens.get(j))) {
-                                    Integer tid = countDict.get(tokens.get(i));
-                                    if (tid == null) {
-                                        tid = id;
-                                        countDict.put(tokens.get(i), tid);
-                                        id++;
+                                if (i != j && dict.containsKey(tokens.get(j))) {
+                                    Vector ri = randomVectors.get(tokens.get(j));
+                                    double f = dict.get(tokens.get(j)).doubleValue() / (double) totalOcc; //downsampling
+                                    double p = 1;
+                                    if (f > t) { //if word frequency is greater than the threshold, compute the probability of consider the word 
+                                        p = Math.sqrt(t / f);
                                     }
-                                    Map<Integer, Integer> countMap = map.get(tid);
-                                    if (countMap == null) {
-                                        countMap = new Int2IntOpenHashMap();
-                                        map.put(tid, countMap);
-                                    }
-                                    Integer tjid = countDict.get(tokens.get(j));
-                                    if (tjid == null) {
-                                        tjid = id;
-                                        countDict.put(tokens.get(j), tjid);
-                                        id++;
-                                    }
-                                    Integer c = countMap.get(tjid);
-                                    if (c == null) {
-                                        countMap.put(tjid, 1);
-                                    } else {
-                                        countMap.put(tjid, c + 1);
-                                    }
+                                    sv.superpose(ri, p, PermutationUtils.getShiftPermutation(VectorType.REAL, dimension, j - i));
                                 }
                             }
                         }
@@ -307,7 +316,12 @@ public class BuildOccurrence {
                 }
             }
         }
-        return new OccOutput(map, countDict);
+        for (Vector v : semanticVectors.values()) {
+            if (!v.isZeroVector()) {
+                v.normalize();
+            }
+        }
+        VectorStoreUtils.saveSpace(outputFile, semanticVectors, VectorType.REAL, dimension, seed);
     }
 
     /**
@@ -350,56 +364,42 @@ public class BuildOccurrence {
         LOG.log(Level.INFO, "Form year: {0}", minYear);
         LOG.log(Level.INFO, "To year: {0}", maxYear);
         LOG.log(Level.INFO, "Build dictionary...");
-        dict = new Object2IntOpenHashMap<>();
+        Map<String, Integer> cmap = new Object2IntOpenHashMap<>();
         for (int k = minYear; k <= maxYear; k++) {
-            buildDict(startingDir, k);
+            buildDict(startingDir, cmap, k);
         }
-        LOG.log(Level.INFO, "Dictionary size: {0}", dict.size());
-        LOG.log(Level.INFO, "Build vocabulary...");
-        List<DictionaryEntry> ld = new ArrayList<>();
-        for (Map.Entry<String, Integer> de : dict.entrySet()) {
-            ld.add(new DictionaryEntry(de.getKey(), de.getValue()));
+        LOG.info("Sorting...");
+        PriorityQueue<DictionaryEntry> queue = new PriorityQueue<>();
+        for (Map.Entry<String, Integer> e : cmap.entrySet()) {
+            if (queue.size() <= vocSize) {
+                queue.offer(new DictionaryEntry(e.getKey(), e.getValue()));
+            } else {
+                queue.offer(new DictionaryEntry(e.getKey(), e.getValue()));
+                queue.poll();
+            }
         }
-        dict.clear();
-        dict = null;
-        Collections.sort(ld, Collections.reverseOrder());
-        if (ld.size() > vocSize) {
-            ld = ld.subList(0, vocSize);
+        if (queue.size() > vocSize) {
+            queue.poll();
         }
-        vocabulary = new ObjectOpenHashSet<>();
-        for (DictionaryEntry de : ld) {
-            vocabulary.add(de.getWord());
+        cmap.clear();
+        cmap = null;
+        totalOcc = 0;
+        Map<String, Vector> randomVectors = new Object2ObjectOpenHashMap();
+        Map<String, Integer> dict = new Object2IntOpenHashMap<>(queue.size());
+        Random random = new Random();
+        for (DictionaryEntry de : queue) {
+            dict.put(de.getWord(), de.getCounter());
+            randomVectors.put(de.getWord(), VectorFactory.generateRandomVector(VectorType.REAL, dimension, seed, random));
+            totalOcc += dict.get(de.getWord());
         }
-        ld.clear();
-        ld = null;
         System.gc();
-        LOG.log(Level.INFO, "Vocabulary size: {0}", vocabulary.size());
+        LOG.log(Level.INFO, "Vocabulary size: {0}", dict.size());
+        LOG.log(Level.INFO, "Build semantic vectors...");
         for (int k = minYear; k <= maxYear; k++) {
-            //logger.log(Level.INFO, "Counting year: {0}", k);
-            OccOutput count = null;
-            count = count(startingDir, k);
-            if (count != null && count.getOcc().size() > 0) {
-                save(count, k);
-            }
+            buildSemanticVectors(startingDir, new File(outputDir.getAbsolutePath() + "/sv_" + k + ".v"), k, dict, randomVectors);
         }
-    }
-
-    private void save(OccOutput count, int year) throws IOException {
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream(new FileOutputStream(outputDir.getAbsolutePath() + "/count_" + year))));
-        Iterator<String> keys = count.getDict().keySet().iterator();
-        while (keys.hasNext()) {
-            String key = keys.next();
-            Map<Integer, Integer> mset = count.getOcc().get(count.getDict().get(key));
-            if (mset != null) {
-                writer.append(key);
-                Set<Map.Entry<Integer, Integer>> entrySet = mset.entrySet();
-                for (Map.Entry<Integer, Integer> entry : entrySet) {
-                    writer.append("\t").append(count.getDict().inverse().get(entry.getKey())).append("\t").append(String.valueOf(entry.getValue()));
-                }
-                writer.newLine();
-            }
-        }
-        writer.close();
+        LOG.log(Level.INFO, "Save random vectors...");
+        VectorStoreUtils.saveSpace(new File(outputDir.getAbsolutePath() + "/random.v"), randomVectors, VectorType.REAL, dimension, seed);
     }
 
     static Options options;
@@ -417,7 +417,10 @@ public class BuildOccurrence {
                 .addOption("s", true, "Stop word file (optional)")
                 .addOption("f", true, "Filter class (optional)")
                 .addOption("k", true, "Load keyword list")
-                .addOption("n", true, "Size of the vocabulary (optional, default 50000)");
+                .addOption("n", true, "Size of the vocabulary (optional, default 50000)")
+                .addOption("dim", true, "The vector dimension (optional, default 500)")
+                .addOption("seed", true, "The number of seeds (optional, default 10)")
+                .addOption("th", true, "Threshold for downsampling frequent words (optinal, default 0.001)");
     }
 
     /**
@@ -449,7 +452,7 @@ public class BuildOccurrence {
                     } else {
                         tokenizer = (TriTokenizer) Class.forName("di.uniba.it.tri.tokenizer." + cmd.getOptionValue("t", "TriStandardTokenizer")).newInstance();
                     }
-                    BuildOccurrence builder = new BuildOccurrence();
+                    PositionalTri builder = new PositionalTri();
                     builder.setOutputDir(new File(cmd.getOptionValue("o")));
                     builder.setWinsize(Integer.parseInt(cmd.getOptionValue("w", "5")));
                     builder.setExtractor((IterableExtractor) classExtractor);
@@ -465,46 +468,20 @@ public class BuildOccurrence {
                     }
                     builder.setFilenameRegExp(cmd.getOptionValue("r", "^.+$"));
                     builder.setVocSize(Integer.parseInt(cmd.getOptionValue("n", "50000")));
+                    builder.setDimension(Integer.parseInt(cmd.getOptionValue("dim", "300")));
+                    builder.setSeed(Integer.parseInt(cmd.getOptionValue("seed", "10")));
+                    builder.setT(Double.parseDouble(cmd.getOptionValue("th", "0.001")));
                     builder.process(new File(cmd.getOptionValue("c")));
                 } catch (Exception ex) {
                     LOG.log(Level.SEVERE, null, ex);
                 }
             } else {
                 HelpFormatter helpFormatter = new HelpFormatter();
-                helpFormatter.printHelp("Build the co-occurrences matrix given the set of files with year metadata", options, true);
+                helpFormatter.printHelp("Build positional temporal random indexing given the set of files with year metadata", options, true);
             }
         } catch (ParseException ex) {
             LOG.log(Level.SEVERE, null, ex);
         }
-    }
-
-    static class OccOutput {
-
-        private Map<Integer, Map<Integer, Integer>> occ;
-
-        private BiMap<String, Integer> dict;
-
-        public OccOutput(Map<Integer, Map<Integer, Integer>> occ, BiMap<String, Integer> dict) {
-            this.occ = occ;
-            this.dict = dict;
-        }
-
-        public Map<Integer, Map<Integer, Integer>> getOcc() {
-            return occ;
-        }
-
-        public void setOcc(Map<Integer, Map<Integer, Integer>> occ) {
-            this.occ = occ;
-        }
-
-        public BiMap<String, Integer> getDict() {
-            return dict;
-        }
-
-        public void setDict(BiMap<String, Integer> dict) {
-            this.dict = dict;
-        }
-
     }
 
 }
