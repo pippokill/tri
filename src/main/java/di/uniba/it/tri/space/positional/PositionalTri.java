@@ -309,6 +309,8 @@ public class PositionalTri {
                                         p = Math.sqrt(t / f);
                                     }
                                     sv.superpose(ri, p, PermutationUtils.getShiftPermutation(VectorType.REAL, dimension, j - i));
+                                    //sum not permutated vector
+                                    sv.superpose(ri, p, null);
                                 }
                             }
                         }
