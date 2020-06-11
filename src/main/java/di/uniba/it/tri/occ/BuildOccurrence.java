@@ -98,6 +98,8 @@ public class BuildOccurrence {
 
     private int vocSize = 50000;
 
+    private int minOcc = -1;
+
     /**
      * Get the RegExp used to fetch files
      *
@@ -212,6 +214,14 @@ public class BuildOccurrence {
         this.vocSize = vocSize;
     }
 
+    public int getMinOcc() {
+        return minOcc;
+    }
+
+    public void setMinOcc(int minOcc) {
+        this.minOcc = minOcc;
+    }
+
     private void buildDict(File startingDir, int year) throws Exception {
         File[] listFiles = startingDir.listFiles();
         for (File file : listFiles) {
@@ -320,7 +330,11 @@ public class BuildOccurrence {
     public void process(File startingDir) throws Exception {
         LOG.log(Level.INFO, "Starting dir: {0}", startingDir.getAbsolutePath());
         LOG.log(Level.INFO, "Output dir: {0}", outputDir.getAbsolutePath());
-        LOG.log(Level.INFO, "Vocabulary size: {0}", vocSize);
+        if (minOcc > -1) {
+            LOG.log(Level.INFO, "Min occurrences: {0}", minOcc);
+        } else {
+            LOG.log(Level.INFO, "Vocabulary size: {0}", vocSize);
+        }
         LOG.log(Level.INFO, "Window size: {0}", winsize);
         File[] listFiles = startingDir.listFiles();
         int minYear = Integer.MAX_VALUE;
@@ -355,23 +369,34 @@ public class BuildOccurrence {
             buildDict(startingDir, k);
         }
         LOG.log(Level.INFO, "Dictionary size: {0}", dict.size());
-        LOG.log(Level.INFO, "Build vocabulary...");
-        List<DictionaryEntry> ld = new ArrayList<>();
-        for (Map.Entry<String, Integer> de : dict.entrySet()) {
-            ld.add(new DictionaryEntry(de.getKey(), de.getValue()));
-        }
-        dict.clear();
-        dict = null;
-        Collections.sort(ld, Collections.reverseOrder());
-        if (ld.size() > vocSize) {
-            ld = ld.subList(0, vocSize);
-        }
         vocabulary = new ObjectOpenHashSet<>();
-        for (DictionaryEntry de : ld) {
-            vocabulary.add(de.getWord());
+        if (minOcc > -1) { //min occ is set
+            LOG.log(Level.INFO, "Build vocabulary by using min-occ={0}", minOcc);
+            for (Map.Entry<String, Integer> de : dict.entrySet()) {
+                if (minOcc < de.getValue()) {
+                    vocabulary.add(de.getKey());
+                }
+            }
+            dict.clear();
+            dict = null;
+        } else { //use vocabulary size
+            LOG.log(Level.INFO, "Build vocabulary by using size={0}", vocSize);
+            List<DictionaryEntry> ld = new ArrayList<>();
+            for (Map.Entry<String, Integer> de : dict.entrySet()) {
+                ld.add(new DictionaryEntry(de.getKey(), de.getValue()));
+            }
+            dict.clear();
+            dict = null;
+            Collections.sort(ld, Collections.reverseOrder());
+            if (ld.size() > vocSize) {
+                ld = ld.subList(0, vocSize);
+            }
+            for (DictionaryEntry de : ld) {
+                vocabulary.add(de.getWord());
+            }
+            ld.clear();
+            ld = null;
         }
-        ld.clear();
-        ld = null;
         System.gc();
         LOG.log(Level.INFO, "Vocabulary size: {0}", vocabulary.size());
         for (int k = minYear; k <= maxYear; k++) {
@@ -417,7 +442,8 @@ public class BuildOccurrence {
                 .addOption("s", true, "Stop word file (optional)")
                 .addOption("f", true, "Filter class (optional)")
                 .addOption("k", true, "Load keyword list (optional)")
-                .addOption("n", true, "Size of the vocabulary (optional, default 50000)");
+                .addOption("n", true, "Size of the vocabulary (optional, default 50000)")
+                .addOption("mo", true, "This will discard words that appear less than <int> times (this option overwrite the -n option)");
     }
 
     /**
@@ -465,6 +491,9 @@ public class BuildOccurrence {
                     }
                     builder.setFilenameRegExp(cmd.getOptionValue("r", "^.+$"));
                     builder.setVocSize(Integer.parseInt(cmd.getOptionValue("n", "50000")));
+                    if (cmd.hasOption("mo")) {
+                        builder.setMinOcc(Integer.parseInt(cmd.getOptionValue("mo")));
+                    }
                     builder.process(new File(cmd.getOptionValue("c")));
                 } catch (Exception ex) {
                     LOG.log(Level.SEVERE, null, ex);

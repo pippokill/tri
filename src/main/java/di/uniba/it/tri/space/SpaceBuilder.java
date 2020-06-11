@@ -97,6 +97,8 @@ public class SpaceBuilder {
 
     private static final int NS_SIZE = 100000000;
 
+    private int minOcc = -1;
+
     /**
      *
      * @param startingDir
@@ -223,6 +225,14 @@ public class SpaceBuilder {
         this.ns = ns;
     }
 
+    public int getMinOcc() {
+        return minOcc;
+    }
+
+    public void setMinOcc(int minOcc) {
+        this.minOcc = minOcc;
+    }
+
     private double idf(String word, double wordOcc) {
         Double idfvalue = idfMap.get(word);
         if (idfvalue == null) {
@@ -241,7 +251,7 @@ public class SpaceBuilder {
         if (!outputDir.exists()) {
             outputDir.mkdir();
         }
-        Map<String, Integer> dict = buildDictionary(startingDir, size);
+        Map<String, Integer> dict = buildDictionary(startingDir);
         LOG.log(Level.INFO, "Dictionary size {0}", dict.size());
         LOG.log(Level.INFO, "Use self random vector: {0}", self);
         LOG.log(Level.INFO, "IDF score: {0}", idf);
@@ -381,7 +391,7 @@ public class SpaceBuilder {
         VectorStoreUtils.saveSpace(new File(outputDir.getAbsolutePath() + "/vectors.elemental"), elementalSpace, VectorType.REAL, dimension, seed);
     }
 
-    private Map<String, Integer> buildDictionary(File startingDir, int maxSize) throws IOException {
+    private Map<String, Integer> buildDictionary(File startingDir) throws IOException {
         LOG.log(Level.INFO, "Building dictionary: {0}", startingDir.getAbsolutePath());
         Map<String, Integer> cmap = new Object2IntOpenHashMap<>();
         File[] listFiles = startingDir.listFiles();
@@ -404,25 +414,34 @@ public class SpaceBuilder {
             }
             reader.close();
         }
-        LOG.info("Sorting...");
-        PriorityQueue<DictionaryEntry> queue = new PriorityQueue<>();
-        for (Map.Entry<String, Integer> e : cmap.entrySet()) {
-            if (queue.size() <= maxSize) {
-                queue.offer(new DictionaryEntry(e.getKey(), e.getValue()));
-            } else {
-                queue.offer(new DictionaryEntry(e.getKey(), e.getValue()));
+        Map<String, Integer> dict = new Object2IntOpenHashMap<>();
+        if (minOcc > -1) {
+            LOG.log(Level.INFO, "Resize dictionary by using min-occ={0}", minOcc);
+            for (Map.Entry<String, Integer> e : cmap.entrySet()) {
+                if (minOcc < e.getValue()) {
+                    dict.put(e.getKey(), e.getValue());
+                }
+            }
+        } else {
+            LOG.log(Level.INFO, "Resize dictionary by using size={0}", size);
+            PriorityQueue<DictionaryEntry> queue = new PriorityQueue<>();
+            for (Map.Entry<String, Integer> e : cmap.entrySet()) {
+                if (queue.size() <= size) {
+                    queue.offer(new DictionaryEntry(e.getKey(), e.getValue()));
+                } else {
+                    queue.offer(new DictionaryEntry(e.getKey(), e.getValue()));
+                    queue.poll();
+                }
+            }
+            if (queue.size() > size) {
                 queue.poll();
             }
+
+            for (DictionaryEntry de : queue) {
+                dict.put(de.getWord(), de.getCounter());
+            }
         }
-        if (queue.size() > maxSize) {
-            queue.poll();
-        }
-        cmap.clear();
-        cmap = null;
-        Map<String, Integer> dict = new Object2IntOpenHashMap<>(queue.size());
-        for (DictionaryEntry de : queue) {
-            dict.put(de.getWord(), de.getCounter());
-        }
+        LOG.log(Level.INFO, "Vocabulary size: {0}", dict.size());
         return dict;
     }
 
@@ -440,7 +459,8 @@ public class SpaceBuilder {
                 .addOption("idf", true, "Enable IDF (optinal, defaults false)")
                 .addOption("self", true, "Inizialize using random vector (optinal, default false)")
                 .addOption("t", true, "Threshold for downsampling frequent words (optinal, default 0.001)")
-                .addOption("ns", true, "Number of negative samples (optinal, default 0)");
+                .addOption("ns", true, "Number of negative samples (optinal, default 0)")
+                .addOption("mo", true, "This will discard words that appear less than <int> times (this option overwrite the -v option)");
     }
 
     /**
@@ -461,6 +481,9 @@ public class SpaceBuilder {
                     builder.setSelf(Boolean.parseBoolean(cmd.getOptionValue("self", "false")));
                     builder.setT(Double.parseDouble(cmd.getOptionValue("t", "0.001")));
                     builder.setNs(Integer.parseInt(cmd.getOptionValue("ns", "0")));
+                    if (cmd.hasOption("mo")) {
+                        builder.setMinOcc(Integer.parseInt(cmd.getOptionValue("mo")));
+                    }
                     builder.build(new File(cmd.getOptionValue("o")));
                 } catch (IOException | NumberFormatException ex) {
                     LOG.log(Level.SEVERE, null, ex);

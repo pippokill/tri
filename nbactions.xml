@@ -10,7 +10,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xmx10g -classpath %classpath di.uniba.it.tri.script.VectorReader2Txt /media/pierpaolo/KINGSTON/semeval/tri_pos/sv_2.v /media/pierpaolo/KINGSTON/semeval/tri_pos/sv_2.v.txt</exec.args>
+                <exec.args>-Xmx10g -classpath %classpath di.uniba.it.tri.test.SemevalScripting</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>
@@ -24,7 +24,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-agentlib:jdwp=transport=dt_socket,server=n,address=${jpda.address} -Xmx10g -classpath %classpath di.uniba.it.tri.script.VectorReader2Txt /media/pierpaolo/KINGSTON/semeval/tri_pos/sv_2.v /media/pierpaolo/KINGSTON/semeval/tri_pos/sv_2.v.txt</exec.args>
+                <exec.args>-agentlib:jdwp=transport=dt_socket,server=n,address=${jpda.address} -Xmx10g -classpath %classpath di.uniba.it.tri.test.SemevalScripting</exec.args>
                 <exec.executable>java</exec.executable>
                 <jpda.listen>true</jpda.listen>
             </properties>
@@ -39,7 +39,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xmx10g -classpath %classpath di.uniba.it.tri.script.VectorReader2Txt /media/pierpaolo/KINGSTON/semeval/tri_pos/sv_2.v /media/pierpaolo/KINGSTON/semeval/tri_pos/sv_2.v.txt</exec.args>
+                <exec.args>-Xmx10g -classpath %classpath di.uniba.it.tri.test.SemevalScripting</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>
