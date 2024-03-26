@@ -36,7 +36,7 @@ public class RankWords {
 
     static {
         options = new Options();
-        options.addOption("t", true, "Time series file")
+        options.addOption("i", true, "Time series file")
                 .addOption("o", true, "Output directory");
     }
 
@@ -48,7 +48,7 @@ public class RankWords {
             CommandLine cmd = cmdParser.parse(options, args);
             if (cmd.hasOption("t") && cmd.hasOption("o")) {
                 BufferedReader in = new BufferedReader(new FileReader(cmd.getOptionValue("t")));
-                CSVParser parser = CSVFormat.DEFAULT.withDelimiter(';').withFirstRecordAsHeader().parse(in);
+                CSVParser parser = CSVFormat.DEFAULT.withDelimiter(',').withFirstRecordAsHeader().parse(in);
                 List<String> years = new ArrayList(parser.getHeaderMap().keySet());
                 years.remove("id");
                 years.remove("word");

@@ -105,7 +105,7 @@ public class BuildSimStatistics {
                 for (int j = 0; j < years.size(); j++) {
                     headers[j + 2] = years.get(j);
                 }
-                final CSVPrinter printer = CSVFormat.DEFAULT.withHeader(headers).withDelimiter(';').print(writer);
+                final CSVPrinter printer = CSVFormat.DEFAULT.withHeader(headers).withDelimiter(',').print(writer);
                 VectorReader evr = api.getStores().get(Tri.ELEMENTAL_NAME);
                 Iterator<String> keys = evr.getKeys();
                 int c = 0;

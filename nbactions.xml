@@ -10,7 +10,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xmx10g -classpath %classpath di.uniba.it.tri.test.SemevalScripting</exec.args>
+                <exec.args>-Xmx14g -classpath %classpath di.uniba.it.tri.space.positional.PositionalTri -c /media/pierpaolo/82883105-79c9-491a-a404-94ead16bcba2/crossAuthor/corpuspos -o /media/pierpaolo/82883105-79c9-491a-a404-94ead16bcba2/crossAuthor/tripostag -e TextFileIterableExtractor -t TriWhitespaceTokenizer -n 50000 -dim 500 -seed 10</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>
@@ -24,7 +24,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-agentlib:jdwp=transport=dt_socket,server=n,address=${jpda.address} -Xmx10g -classpath %classpath di.uniba.it.tri.test.SemevalScripting</exec.args>
+                <exec.args>-agentlib:jdwp=transport=dt_socket,server=n,address=${jpda.address} -Xmx14g -classpath %classpath di.uniba.it.tri.space.positional.PositionalTri -c /media/pierpaolo/82883105-79c9-491a-a404-94ead16bcba2/crossAuthor/corpuspos -o /media/pierpaolo/82883105-79c9-491a-a404-94ead16bcba2/crossAuthor/tripostag -e TextFileIterableExtractor -t TriWhitespaceTokenizer -n 50000 -dim 500 -seed 10</exec.args>
                 <exec.executable>java</exec.executable>
                 <jpda.listen>true</jpda.listen>
             </properties>
@@ -39,7 +39,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-Xmx10g -classpath %classpath di.uniba.it.tri.test.SemevalScripting</exec.args>
+                <exec.args>-Xmx14g -classpath %classpath di.uniba.it.tri.space.positional.PositionalTri -c /media/pierpaolo/82883105-79c9-491a-a404-94ead16bcba2/crossAuthor/corpuspos -o /media/pierpaolo/82883105-79c9-491a-a404-94ead16bcba2/crossAuthor/tripostag -e TextFileIterableExtractor -t TriWhitespaceTokenizer -n 50000 -dim 500 -seed 10</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>
